@@ -277,8 +277,14 @@ class BookingServiceStateTransitionTest extends TestCase
         $booking->expects($this->once())->method('markCanceled')->with($this->isType('string'));
         $service = $this->makeService($booking);
 
-        $tenant = $this->makeUser(UserRole::TENANT);
+        // Tenant's ID must match booking.tenant_user_id ('tenant-1')
+        $org = $this->makeOrg();
+        $tenant = $this->createMock(User::class);
         $tenant->method('getId')->willReturn('tenant-1');
+        $tenant->method('getRole')->willReturn(UserRole::TENANT);
+        $tenant->method('getOrganization')->willReturn($org);
+        $tenant->method('getOrganizationId')->willReturn('org-1');
+        $tenant->method('getUsername')->willReturn('tenant');
 
         $result = $service->cancel($tenant, 'booking-1');
         $this->assertSame($booking, $result);

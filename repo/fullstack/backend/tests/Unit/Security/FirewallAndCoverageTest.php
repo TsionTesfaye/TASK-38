@@ -16,6 +16,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 
 /**
  * Tests the consolidated auth path (ApiTokenAuthenticator) and RBAC matrix:
@@ -74,7 +75,6 @@ class FirewallAndCoverageTest extends TestCase
         $user->method('getPasswordChangedAt')->willReturn($passwordChangedAt);
         $user->method('getUserIdentifier')->willReturn('user-1');
         $user->method('getRoles')->willReturn(['ROLE_USER']);
-        $user->method('eraseCredentials')->willReturn(null);
         return $user;
     }
 
@@ -160,8 +160,9 @@ class FirewallAndCoverageTest extends TestCase
         $request = Request::create('/api/v1/bookings');
         $request->headers->set('Authorization', 'Bearer stale.jwt');
 
+        $passport = $auth->authenticate($request);
         $this->expectException(AuthenticationException::class);
-        $auth->authenticate($request);
+        $passport->getBadge(UserBadge::class)->getUser();
     }
 
     public function testTokenIssuedAfterPasswordChangeAccepted(): void
@@ -253,8 +254,10 @@ class FirewallAndCoverageTest extends TestCase
         $request = Request::create('/api/v1/bookings');
         $request->headers->set('Authorization', 'Bearer frozen.jwt');
 
+        $passport = $auth->authenticate($request);
+        // The user-loader callback runs lazily; resolve the badge to trigger it.
         $this->expectException(AuthenticationException::class);
-        $auth->authenticate($request);
+        $passport->getBadge(UserBadge::class)->getUser();
     }
 
     public function testInactiveUserRejected(): void
@@ -263,12 +266,14 @@ class FirewallAndCoverageTest extends TestCase
         $user->method('getId')->willReturn('inactive-1');
         $user->method('isActive')->willReturn(false);
         $user->method('isFrozen')->willReturn(false);
+        $user->method('getRole')->willReturn(UserRole::TENANT);
 
         $auth = $this->makeAuthenticator($user);
         $request = Request::create('/api/v1/bookings');
         $request->headers->set('Authorization', 'Bearer inactive.jwt');
 
+        $passport = $auth->authenticate($request);
         $this->expectException(AuthenticationException::class);
-        $auth->authenticate($request);
+        $passport->getBadge(UserBadge::class)->getUser();
     }
 }

@@ -19,7 +19,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ./fullstack/backend
       dockerfile: Dockerfile
     container_name: rentops-backend
     ports:
@@ -40,14 +40,14 @@ services:
       BACKUP_STORAGE_PATH: /var/www/storage/backups
       STORAGE_PATH: /var/www/storage
     volumes:
-      - ./backend:/var/www/html
+      - ./fullstack/backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
-      - ./storage/pdfs:/var/www/storage/pdfs
-      - ./storage/exports:/var/www/storage/exports
-      - ./storage/backups:/var/www/storage/backups
-      - ./storage/logs:/var/www/storage/logs
-      - ./storage/terminal_assets:/var/www/storage/terminal_assets
-      - ./storage/terminal_chunks:/var/www/storage/terminal_chunks
+      - ./fullstack/storage/pdfs:/var/www/storage/pdfs
+      - ./fullstack/storage/exports:/var/www/storage/exports
+      - ./fullstack/storage/backups:/var/www/storage/backups
+      - ./fullstack/storage/logs:/var/www/storage/logs
+      - ./fullstack/storage/terminal_assets:/var/www/storage/terminal_assets
+      - ./fullstack/storage/terminal_chunks:/var/www/storage/terminal_chunks
     healthcheck:
       test: ["CMD", "php", "-r", "echo file_get_contents('http://127.0.0.1:8080/api/v1/health') !== false ? 'ok' : 'fail';"]
       interval: 15s
@@ -57,7 +57,7 @@ services:
 
   scheduler:
     build:
-      context: ./backend
+      context: ./fullstack/backend
       dockerfile: Dockerfile
     container_name: rentops-scheduler
     depends_on:
@@ -76,16 +76,16 @@ services:
       BACKUP_STORAGE_PATH: /var/www/storage/backups
       STORAGE_PATH: /var/www/storage
     volumes:
-      - ./backend:/var/www/html
+      - ./fullstack/backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
-      - ./storage/backups:/var/www/storage/backups
-      - ./storage/logs:/var/www/storage/logs
+      - ./fullstack/storage/backups:/var/www/storage/backups
+      - ./fullstack/storage/logs:/var/www/storage/logs
     restart: unless-stopped
     entrypoint: ["php", "bin/console", "app:scheduler:run"]
 
   frontend:
     build:
-      context: ./frontend
+      context: ./fullstack/frontend
       dockerfile: Dockerfile
     container_name: rentops-frontend
     ports:
@@ -95,7 +95,7 @@ services:
     environment:
       NODE_ENV: development
     volumes:
-      - ./frontend:/app
+      - ./fullstack/frontend:/app
       - frontend_node_modules:/app/node_modules
     command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 3000"]
 

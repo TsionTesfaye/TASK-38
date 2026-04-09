@@ -640,9 +640,11 @@ class ParanoidHardeningTest extends TestCase
         $request = Request::create('/api/v1/bookings');
         $request->headers->set('Authorization', 'Bearer valid.jwt');
 
+        $passport = $auth->authenticate($request);
+        // The user-loader callback runs lazily; resolve the badge to trigger it.
         $this->expectException(\Symfony\Component\Security\Core\Exception\AuthenticationException::class);
         $this->expectExceptionMessage('frozen');
-        $auth->authenticate($request);
+        $passport->getBadge(\Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge::class)->getUser();
     }
 
     // ═══════════════════════════════════════════════════════════════

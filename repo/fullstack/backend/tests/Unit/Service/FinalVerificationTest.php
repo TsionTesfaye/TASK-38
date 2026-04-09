@@ -107,8 +107,9 @@ class FinalVerificationTest extends TestCase
 
         $auth = $this->buildAuthenticator($tokenIat, $pwChanged);
 
+        $passport = $auth->authenticate($this->makeAuthRequest('old-token'));
         $this->expectException(\Symfony\Component\Security\Core\Exception\AuthenticationException::class);
-        $auth->authenticate($this->makeAuthRequest('old-token'));
+        $passport->getBadge(\Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge::class)->getUser();
     }
 
     /**
@@ -121,8 +122,9 @@ class FinalVerificationTest extends TestCase
 
         $auth = $this->buildAuthenticator($tokenIat, $pwChanged);
 
+        $passport = $auth->authenticate($this->makeAuthRequest('stale-token'));
         $this->expectException(\Symfony\Component\Security\Core\Exception\AuthenticationException::class);
-        $auth->authenticate($this->makeAuthRequest('stale-token'));
+        $passport->getBadge(\Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge::class)->getUser();
     }
 
     /**
@@ -335,12 +337,11 @@ class FinalVerificationTest extends TestCase
         $exception = new \DomainException("Hold {$uuid} is not active");
 
         // Capture what the logger receives
-        $logMessages = [];
-        $logger = new class($logMessages) extends AbstractLogger {
-            private array &$msgs;
-            public function __construct(array &$msgs) { $this->msgs = &$msgs; }
+        $logger = new class extends AbstractLogger {
+            /** @var array<int, array{level: mixed, message: string, context: array}> */
+            public array $messages = [];
             public function log($level, string|\Stringable $message, array $context = []): void {
-                $this->msgs[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
+                $this->messages[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
             }
         };
 
@@ -378,12 +379,11 @@ class FinalVerificationTest extends TestCase
         $uuid = 'deadbeef-dead-beef-dead-beefdeadbeef';
         $exception = new \RuntimeException("PDO error on entity {$uuid}");
 
-        $logMessages = [];
-        $logger = new class($logMessages) extends AbstractLogger {
-            private array &$msgs;
-            public function __construct(array &$msgs) { $this->msgs = &$msgs; }
+        $logger = new class extends AbstractLogger {
+            /** @var array<int, array{level: mixed, message: string, context: array}> */
+            public array $messages = [];
             public function log($level, string|\Stringable $message, array $context = []): void {
-                $this->msgs[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
+                $this->messages[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
             }
         };
 
@@ -401,11 +401,11 @@ class FinalVerificationTest extends TestCase
         $this->assertStringNotContainsString($uuid, json_encode($body));
 
         // Logger was called with redacted message
-        $this->assertCount(1, $logMessages);
-        $this->assertSame('error', $logMessages[0]['level']);
+        $this->assertCount(1, $logger->messages);
+        $this->assertSame('error', $logger->messages[0]['level']);
         // The context message field is redacted by the listener
-        $this->assertStringNotContainsString('deadbeef-dead', $logMessages[0]['context']['message']);
-        $this->assertStringContainsString('****beef', $logMessages[0]['context']['message']);
+        $this->assertStringNotContainsString('deadbeef-dead', $logger->messages[0]['context']['message']);
+        $this->assertStringContainsString('****beef', $logger->messages[0]['context']['message']);
     }
 
     // ═══════════════════════════════════════════════════════════════

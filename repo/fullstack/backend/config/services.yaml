@@ -1,0 +1,29 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller/'
+        tags: ['controller.service_arguments']
+
+    App\Security\ApiTokenAuthenticator:
+        arguments:
+            $publicRoutes:
+                - '/api/v1/health'
+                - '/api/v1/bootstrap'
+                - '/api/v1/auth/login'
+                - '/api/v1/auth/refresh'
+                - '/api/v1/payments/callback'
+
+    App\Service\BackupService:
+        arguments:
+            $backupStoragePath: '%env(string:BACKUP_STORAGE_PATH)%'
+            $backupEncryptionKey: '%env(string:BACKUP_ENCRYPTION_KEY)%'

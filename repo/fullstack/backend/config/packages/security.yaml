@@ -1,0 +1,29 @@
+security:
+    providers:
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: id
+    firewalls:
+        api:
+            pattern: ^/api/
+            stateless: true
+            custom_authenticators:
+                - App\Security\ApiTokenAuthenticator
+        main:
+            lazy: true
+            stateless: true
+
+    access_control:
+        # ── Public routes (no authentication required) ────────────────
+        - { path: ^/api/v1/health$,            allow_if: 'true' }
+        - { path: ^/api/v1/bootstrap$,         allow_if: 'true' }
+        - { path: ^/api/v1/auth/login$,        allow_if: 'true' }
+        - { path: ^/api/v1/auth/refresh$,      allow_if: 'true' }
+        - { path: ^/api/v1/payments/callback$,  allow_if: 'true' }
+
+        # ── Authenticated routes (all other /api/) ────────────────────
+        # Fine-grained role checks are enforced by RbacEnforcer in the
+        # service layer.  access_control guarantees NO route is
+        # implicitly public.
+        - { path: ^/api/, roles: ROLE_USER }

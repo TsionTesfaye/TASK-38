@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: rentops-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: rentops
+      MYSQL_USER: rentops
+      MYSQL_PASSWORD: rentops_secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rentops-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: change_me_in_production
+      DATABASE_URL: mysql://rentops:rentops_secret@mysql:3306/rentops?serverVersion=8.0
+      JWT_SECRET: local_jwt_secret_key_change_in_production
+      JWT_ACCESS_TOKEN_TTL: "900"
+      JWT_REFRESH_TOKEN_TTL: "1209600"
+      PAYMENT_SHARED_SECRET: local_payment_shared_secret
+      BACKUP_ENCRYPTION_KEY: local_backup_encryption_key_32ch
+      BACKUP_STORAGE_PATH: /var/www/storage/backups
+      STORAGE_PATH: /var/www/storage
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+      - ./storage/pdfs:/var/www/storage/pdfs
+      - ./storage/exports:/var/www/storage/exports
+      - ./storage/backups:/var/www/storage/backups
+      - ./storage/logs:/var/www/storage/logs
+      - ./storage/terminal_assets:/var/www/storage/terminal_assets
+      - ./storage/terminal_chunks:/var/www/storage/terminal_chunks
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo file_get_contents('http://127.0.0.1:8080/api/v1/health') !== false ? 'ok' : 'fail';"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rentops-scheduler
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: change_me_in_production
+      DATABASE_URL: mysql://rentops:rentops_secret@mysql:3306/rentops?serverVersion=8.0
+      JWT_SECRET: local_jwt_secret_key_change_in_production
+      JWT_ACCESS_TOKEN_TTL: "900"
+      JWT_REFRESH_TOKEN_TTL: "1209600"
+      PAYMENT_SHARED_SECRET: local_payment_shared_secret
+      BACKUP_ENCRYPTION_KEY: local_backup_encryption_key_32ch
+      BACKUP_STORAGE_PATH: /var/www/storage/backups
+      STORAGE_PATH: /var/www/storage
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+      - ./storage/backups:/var/www/storage/backups
+      - ./storage/logs:/var/www/storage/logs
+    restart: unless-stopped
+    entrypoint: ["php", "bin/console", "app:scheduler:run"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rentops-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 3000"]
+
+volumes:
+  mysql_data:
+  backend_vendor:
+  frontend_node_modules:

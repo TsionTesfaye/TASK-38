@@ -1,0 +1,32 @@
+# Dependencies
+fullstack/backend/vendor/
+fullstack/frontend/node_modules/
+
+# Build artifacts
+fullstack/frontend/dist/
+fullstack/backend/var/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.*.local
+
+# Storage (runtime data)
+fullstack/storage/
+
+# Cache
+fullstack/backend/.phpunit.cache/
+fullstack/backend/var/cache/
+fullstack/backend/var/log/
+
+# Docker volumes
+mysql_data/

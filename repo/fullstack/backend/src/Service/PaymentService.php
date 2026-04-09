@@ -254,6 +254,11 @@ class PaymentService
 
                 $payment->transitionTo(PaymentStatus::SUCCEEDED);
 
+                // Flush the payment status before updateBillStatus queries for
+                // succeeded payments. Without this, the DQL query in
+                // updateBillStatus may not see the in-memory status change.
+                $this->em->flush();
+
                 $this->billingService->updateBillStatus($bill);
 
                 $this->ledgerService->createEntry(

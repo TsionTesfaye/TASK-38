@@ -49,6 +49,9 @@ class RecurringBillingTimezoneTest extends TestCase
     /** @var array<string, Settings&MockObject> */
     private array $settingsByOrg = [];
 
+    /** Override return for findByBookingAndPeriod. Null = no existing bill. */
+    private ?\App\Entity\Bill $existingBillOverride = null;
+
     protected function setUp(): void
     {
         $this->billRepo = $this->createMock(BillRepository::class);
@@ -57,7 +60,10 @@ class RecurringBillingTimezoneTest extends TestCase
         $this->em = $this->createMock(EntityManagerInterface::class);
 
         // By default, no existing bill (no duplicate).
-        $this->billRepo->method('findByBookingAndPeriod')->willReturn(null);
+        // Tests can set $this->existingBillOverride to simulate a duplicate.
+        $this->existingBillOverride = null;
+        $this->billRepo->method('findByBookingAndPeriod')
+            ->willReturnCallback(fn () => $this->existingBillOverride);
 
         // Settings lookup dispatches by org ID.
         $this->settingsRepo->method('findByOrganizationId')
@@ -115,7 +121,9 @@ class RecurringBillingTimezoneTest extends TestCase
      */
     private function stubActiveBookings(array $bookings): void
     {
-        $query = $this->createMock(AbstractQuery::class);
+        $query = $this->getMockBuilder(\Doctrine\ORM\Query::class)
+            ->disableOriginalConstructor()
+            ->getMock();
         $query->method('getResult')->willReturn($bookings);
 
         $qb = $this->createMock(QueryBuilder::class);
@@ -269,9 +277,7 @@ class RecurringBillingTimezoneTest extends TestCase
         $this->timeService->method('getCurrentPeriod')->willReturn('2026-01');
 
         // Simulate: a bill already exists for this booking+period.
-        $existingBill = $this->createMock(\App\Entity\Bill::class);
-        $this->billRepo->expects($this->any())->method('findByBookingAndPeriod')
-            ->willReturn($existingBill);
+        $this->existingBillOverride = $this->createMock(\App\Entity\Bill::class);
 
         $booking = $this->makeBooking('b-utc', 'org-utc');
         $this->stubActiveBookings([$booking]);

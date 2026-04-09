@@ -93,11 +93,11 @@ class IdMaskingTest extends TestCase
 
     public function testListenerRedactsUuidsInDomainExceptionMessages(): void
     {
-        $e = new \DomainException('Hold abc12345-6789-0def-ghij-klmnopqrstuv is not active');
+        $e = new \DomainException('Hold abc12345-6789-0def-abcd-1234567890ab is not active');
         $body = $this->simulateException($e);
 
         $this->assertSame(409, $body['code']);
-        $this->assertStringNotContainsString('abc12345-6789-0def-ghij-klmnopqrstuv', $body['message']);
+        $this->assertStringNotContainsString('abc12345-6789-0def-abcd-1234567890ab', $body['message']);
     }
 
     public function testListenerRedactsUuidsInInvalidArgumentMessages(): void

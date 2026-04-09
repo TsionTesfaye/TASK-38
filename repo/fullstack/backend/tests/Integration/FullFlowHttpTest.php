@@ -63,13 +63,19 @@ class FullFlowHttpTest extends WebTestCase
             'admin_display_name' => 'Admin', 'default_currency' => 'USD',
         ]);
 
-        $r = $this->api('POST', '/auth/login', [
-            'username' => 'admin', 'password' => 'password123',
-            'device_label' => 'test', 'client_device_id' => 'test-' . uniqid(),
-        ]);
-        $this->assertSame(200, $r['status'], 'Admin login');
-        $this->adminTokenCache = $r['body']['data']['access_token'];
-        return $this->adminTokenCache;
+        // Try known credentials (may have been bootstrapped by another test class).
+        foreach (['admin', 'http_test_admin', 'session_cap_admin', 'uniq_admin', 'payadmin'] as $user) {
+            $r = $this->api('POST', '/auth/login', [
+                'username' => $user, 'password' => ($user === 'admin' || $user === 'payadmin') ? 'password123' : 'secure_pass_123',
+                'device_label' => 'test', 'client_device_id' => 'test-' . uniqid(),
+            ]);
+            if ($r['status'] === 200) {
+                $this->adminTokenCache = $r['body']['data']['access_token'];
+                return $this->adminTokenCache;
+            }
+        }
+        $this->fail('Admin login failed with all known credentials');
+        return '';
     }
 
     private function getTenantToken(): string

@@ -6,7 +6,7 @@ namespace App\Tests\Integration;
 
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Doctrine\DBAL\Connection;
-use Ramsey\Uuid\Uuid;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Integration test: backup → restore with real FK-linked data.
@@ -17,7 +17,9 @@ use Ramsey\Uuid\Uuid;
  *   - row counts match before/after
  *   - FK constraints are satisfied
  *   - relationships are intact
+ *
  */
+#[\PHPUnit\Framework\Attributes\Group('backup')]
 class BackupRestoreIntegrationTest extends KernelTestCase
 {
     private Connection $conn;
@@ -31,34 +33,77 @@ class BackupRestoreIntegrationTest extends KernelTestCase
     private string $refundId;
     private string $ledgerEntryId;
 
+    public static function tearDownAfterClass(): void
+    {
+        // Final cleanup after ALL tests in this class, even if individual tests threw.
+        $kernel = self::bootKernel();
+        $conn = $kernel->getContainer()->get('doctrine.dbal.default_connection');
+        try {
+            $orgIds = $conn->fetchFirstColumn("SELECT id FROM organizations WHERE code LIKE 'BKTEST_%'");
+            if (!empty($orgIds)) {
+                $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+                foreach ($orgIds as $orgId) {
+                    foreach (['ledger_entries','refunds','payments','bills','bookings','booking_holds','inventory_pricing','inventory_items','audit_logs','notifications','settings','device_sessions','users'] as $t) {
+                        $conn->executeStatement("DELETE FROM {$t} WHERE organization_id = ?", [$orgId]);
+                    }
+                    $conn->executeStatement('DELETE FROM organizations WHERE id = ?', [$orgId]);
+                }
+                $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
+            }
+        } catch (\Throwable) {
+            try { $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1'); } catch (\Throwable) {}
+        }
+        parent::tearDownAfterClass();
+    }
+
     protected function setUp(): void
     {
         self::bootKernel();
         $this->conn = self::getContainer()->get('doctrine.dbal.default_connection');
 
+        // Clean up any stale data from prior failed runs before seeding.
+        $this->cleanupAllTestOrgs();
         $this->seedTestData();
     }
 
     protected function tearDown(): void
     {
-        // Clean up test data in child → parent order.
-        $this->conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
-        foreach ([
-            'ledger_entries', 'refunds', 'payments', 'bills', 'bookings',
-            'booking_holds', 'inventory_pricing', 'inventory_items',
-            'audit_logs', 'notifications', 'settings',
-            'device_sessions', 'users', 'organizations',
-        ] as $table) {
-            $this->conn->executeStatement(
-                "DELETE FROM {$table} WHERE "
-                . ($table === 'organizations' ? 'id' : 'organization_id')
-                . ' = :orgId',
-                ['orgId' => $this->orgId],
-            );
-        }
-        $this->conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
-
+        $this->cleanupAllTestOrgs();
         parent::tearDown();
+    }
+
+    /**
+     * Remove all organizations whose code starts with 'BKTEST_' and their
+     * cascaded data. This handles stale data from prior failed test runs.
+     */
+    private function cleanupAllTestOrgs(): void
+    {
+        try {
+            $orgIds = $this->conn->fetchFirstColumn(
+                "SELECT id FROM organizations WHERE code LIKE 'BKTEST_%'",
+            );
+            if (empty($orgIds)) return;
+
+            $this->conn->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
+            foreach ($orgIds as $orgId) {
+                foreach ([
+                    'ledger_entries', 'refunds', 'payments', 'bills', 'bookings',
+                    'booking_holds', 'inventory_pricing', 'inventory_items',
+                    'audit_logs', 'notifications', 'settings',
+                    'device_sessions', 'users',
+                ] as $table) {
+                    $this->conn->executeStatement(
+                        "DELETE FROM {$table} WHERE organization_id = ?",
+                        [$orgId],
+                    );
+                }
+                $this->conn->executeStatement('DELETE FROM organizations WHERE id = ?', [$orgId]);
+            }
+            $this->conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
+        } catch (\Throwable) {
+            // Best-effort cleanup
+            try { $this->conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1'); } catch (\Throwable) {}
+        }
     }
 
     private function seedTestData(): void
@@ -66,10 +111,10 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
         // ── Organization ──
-        $this->orgId = Uuid::uuid4()->toString();
+        $this->orgId = Uuid::v4()->toRfc4122();
         $this->conn->insert('organizations', [
             'id' => $this->orgId,
-            'code' => 'BKTEST_' . substr(Uuid::uuid4()->toString(), 0, 8),
+            'code' => 'BKTEST_' . substr(Uuid::v4()->toRfc4122(), 0, 8),
             'name' => 'Backup Test Org',
             'is_active' => 1,
             'default_currency' => 'USD',
@@ -78,11 +123,11 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Users ──
-        $this->adminUserId = Uuid::uuid4()->toString();
+        $this->adminUserId = Uuid::v4()->toRfc4122();
         $this->conn->insert('users', [
             'id' => $this->adminUserId,
             'organization_id' => $this->orgId,
-            'username' => 'bkadmin_' . substr(Uuid::uuid4()->toString(), 0, 8),
+            'username' => 'bkadmin_' . substr(Uuid::v4()->toRfc4122(), 0, 8),
             'password_hash' => password_hash('test', PASSWORD_BCRYPT),
             'display_name' => 'Backup Admin',
             'role' => 'administrator',
@@ -92,11 +137,11 @@ class BackupRestoreIntegrationTest extends KernelTestCase
             'updated_at' => $now,
         ]);
 
-        $this->tenantUserId = Uuid::uuid4()->toString();
+        $this->tenantUserId = Uuid::v4()->toRfc4122();
         $this->conn->insert('users', [
             'id' => $this->tenantUserId,
             'organization_id' => $this->orgId,
-            'username' => 'bktenant_' . substr(Uuid::uuid4()->toString(), 0, 8),
+            'username' => 'bktenant_' . substr(Uuid::v4()->toRfc4122(), 0, 8),
             'password_hash' => password_hash('test', PASSWORD_BCRYPT),
             'display_name' => 'Backup Tenant',
             'role' => 'tenant',
@@ -107,11 +152,11 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Inventory ──
-        $this->itemId = Uuid::uuid4()->toString();
+        $this->itemId = Uuid::v4()->toRfc4122();
         $this->conn->insert('inventory_items', [
             'id' => $this->itemId,
             'organization_id' => $this->orgId,
-            'asset_code' => 'BK-' . substr(Uuid::uuid4()->toString(), 0, 8),
+            'asset_code' => 'BK-' . substr(Uuid::v4()->toRfc4122(), 0, 8),
             'name' => 'Backup Test Unit',
             'asset_type' => 'studio',
             'location_name' => 'Building A',
@@ -124,7 +169,7 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Booking ──
-        $this->bookingId = Uuid::uuid4()->toString();
+        $this->bookingId = Uuid::v4()->toRfc4122();
         $this->conn->insert('bookings', [
             'id' => $this->bookingId,
             'organization_id' => $this->orgId,
@@ -144,7 +189,7 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Bill ──
-        $this->billId = Uuid::uuid4()->toString();
+        $this->billId = Uuid::v4()->toRfc4122();
         $this->conn->insert('bills', [
             'id' => $this->billId,
             'organization_id' => $this->orgId,
@@ -160,12 +205,12 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Payment ──
-        $this->paymentId = Uuid::uuid4()->toString();
+        $this->paymentId = Uuid::v4()->toRfc4122();
         $this->conn->insert('payments', [
             'id' => $this->paymentId,
             'organization_id' => $this->orgId,
             'bill_id' => $this->billId,
-            'request_id' => 'req_bk_' . Uuid::uuid4()->toString(),
+            'request_id' => 'req_bk_' . Uuid::v4()->toRfc4122(),
             'status' => 'succeeded',
             'currency' => 'USD',
             'amount' => '100.00',
@@ -176,7 +221,7 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Refund ──
-        $this->refundId = Uuid::uuid4()->toString();
+        $this->refundId = Uuid::v4()->toRfc4122();
         $this->conn->insert('refunds', [
             'id' => $this->refundId,
             'organization_id' => $this->orgId,
@@ -190,7 +235,7 @@ class BackupRestoreIntegrationTest extends KernelTestCase
         ]);
 
         // ── Ledger Entry ──
-        $this->ledgerEntryId = Uuid::uuid4()->toString();
+        $this->ledgerEntryId = Uuid::v4()->toRfc4122();
         $this->conn->insert('ledger_entries', [
             'id' => $this->ledgerEntryId,
             'organization_id' => $this->orgId,

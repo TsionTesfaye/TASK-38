@@ -62,6 +62,9 @@ class SessionCapRealDbTest extends WebTestCase
         ];
     }
 
+    private string $adminUsername = 'session_cap_admin';
+    private string $adminPassword = 'secure_pass_123';
+
     private function bootstrap(): void
     {
         $this->api('POST', '/bootstrap', [
@@ -72,14 +75,30 @@ class SessionCapRealDbTest extends WebTestCase
             'admin_display_name'=> 'Session Cap Admin',
             'default_currency'  => 'USD',
         ]);
-        // 201 = first bootstrap, 409 = already bootstrapped — both OK
+
+        // Discover which credentials work (another test may have bootstrapped first).
+        $candidates = [
+            ['session_cap_admin', 'secure_pass_123'],
+            ['admin', 'password123'],
+            ['http_test_admin', 'secure_pass_123'],
+            ['payadmin', 'password123'],
+            ['uniq_admin', 'secure_pass_123'],
+        ];
+        foreach ($candidates as [$u, $p]) {
+            $r = $this->api('POST', '/auth/login', ['username' => $u, 'password' => $p, 'device_label' => 'probe', 'client_device_id' => 'probe-' . uniqid()]);
+            if ($r['status'] === 200) {
+                $this->adminUsername = $u;
+                $this->adminPassword = $p;
+                return;
+            }
+        }
     }
 
     private function login(string $deviceLabel): array
     {
         return $this->api('POST', '/auth/login', [
-            'username'         => 'session_cap_admin',
-            'password'         => 'secure_pass_123',
+            'username'         => $this->adminUsername,
+            'password'         => $this->adminPassword,
             'device_label'     => $deviceLabel,
             'client_device_id' => 'cap-test-' . $deviceLabel . '-' . uniqid(),
         ]);

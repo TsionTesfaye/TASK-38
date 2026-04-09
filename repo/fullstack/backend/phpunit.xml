@@ -20,6 +20,10 @@
         </testsuite>
         <testsuite name="integration">
             <directory>tests/Integration</directory>
+            <exclude>tests/Integration/BackupRestoreIntegrationTest.php</exclude>
+        </testsuite>
+        <testsuite name="integration-backup">
+            <file>tests/Integration/BackupRestoreIntegrationTest.php</file>
         </testsuite>
     </testsuites>
 

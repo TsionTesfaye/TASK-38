@@ -28,8 +28,8 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      APP_ENV: dev
-      APP_DEBUG: "1"
+      APP_ENV: prod
+      APP_DEBUG: "0"
       APP_SECRET: change_me_in_production
       DATABASE_URL: mysql://rentops:rentops_secret@mysql:3306/rentops?serverVersion=8.0
       JWT_SECRET: local_jwt_secret_key_change_in_production
@@ -64,8 +64,8 @@ services:
       backend:
         condition: service_healthy
     environment:
-      APP_ENV: dev
-      APP_DEBUG: "1"
+      APP_ENV: prod
+      APP_DEBUG: "0"
       APP_SECRET: change_me_in_production
       DATABASE_URL: mysql://rentops:rentops_secret@mysql:3306/rentops?serverVersion=8.0
       JWT_SECRET: local_jwt_secret_key_change_in_production

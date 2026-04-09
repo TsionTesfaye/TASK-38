@@ -190,20 +190,30 @@ class HttpApiTest extends WebTestCase
     {
         $this->ensureBootstrapped($client);
 
-        $client->request('POST', '/api/v1/auth/login', [], [], [
-            'CONTENT_TYPE' => 'application/json',
-        ], json_encode([
-            'username' => 'admin',
-            'password' => 'password123',
-            'device_label' => 'phpunit',
-            'client_device_id' => 'phpunit-http',
-        ]));
+        $candidates = [
+            ['admin', 'password123'],
+            ['http_test_admin', 'secure_pass_123'],
+            ['session_cap_admin', 'secure_pass_123'],
+            ['uniq_admin', 'secure_pass_123'],
+            ['payadmin', 'password123'],
+        ];
 
-        if ($client->getResponse()->getStatusCode() !== 200) {
-            return null;
+        foreach ($candidates as [$user, $pass]) {
+            $client->request('POST', '/api/v1/auth/login', [], [], [
+                'CONTENT_TYPE' => 'application/json',
+            ], json_encode([
+                'username' => $user,
+                'password' => $pass,
+                'device_label' => 'phpunit',
+                'client_device_id' => 'phpunit-http-' . uniqid(),
+            ]));
+
+            if ($client->getResponse()->getStatusCode() === 200) {
+                $body = json_decode($client->getResponse()->getContent(), true);
+                return $body['data']['access_token'] ?? null;
+            }
         }
 
-        $body = json_decode($client->getResponse()->getContent(), true);
-        return $body['data']['access_token'] ?? null;
+        return null;
     }
 }

@@ -39,6 +39,11 @@ echo "MySQL is ready."
 mkdir -p /var/www/storage/pdfs /var/www/storage/exports /var/www/storage/backups \
     /var/www/storage/logs /var/www/storage/terminal_assets /var/www/storage/terminal_chunks
 
+# Clear and warm Symfony cache for current environment
+echo "Warming Symfony cache..."
+php bin/console cache:clear --no-warmup 2>/dev/null || true
+php bin/console cache:warmup 2>/dev/null || true
+
 echo "Running database migrations..."
 php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || {
     echo "WARNING: Migrations failed or skipped."

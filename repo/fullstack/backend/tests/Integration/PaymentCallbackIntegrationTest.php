@@ -55,19 +55,33 @@ class PaymentCallbackIntegrationTest extends WebTestCase
     {
         if ($this->adminToken) return $this->adminToken;
 
+        // Try to bootstrap with our credentials; may 409 if already bootstrapped by another test.
         $this->api('POST', '/bootstrap', [
             'organization_name' => 'Pay QA Org', 'organization_code' => 'PAYQA',
             'admin_username' => 'payadmin', 'admin_password' => 'password123',
             'admin_display_name' => 'Pay Admin', 'default_currency' => 'USD',
         ]);
 
-        $r = $this->api('POST', '/auth/login', [
-            'username' => 'payadmin', 'password' => 'password123',
-            'device_label' => 'test', 'client_device_id' => 'pcb-' . uniqid(),
-        ]);
-        $this->assertSame(200, $r['status'], 'Admin login failed');
-        $this->adminToken = $r['body']['data']['access_token'];
-        return $this->adminToken;
+        // Try our credentials first, then fall back to common bootstrap credentials
+        // used by other integration tests (HttpApiTest, FullFlowHttpTest).
+        $candidates = [
+            ['username' => 'payadmin', 'password' => 'password123'],
+            ['username' => 'admin', 'password' => 'password123'],
+            ['username' => 'http_test_admin', 'password' => 'secure_pass_123'],
+        ];
+
+        foreach ($candidates as $cred) {
+            $r = $this->api('POST', '/auth/login', [
+                'username' => $cred['username'], 'password' => $cred['password'],
+                'device_label' => 'test', 'client_device_id' => 'pcb-' . uniqid(),
+            ]);
+            if ($r['status'] === 200) {
+                $this->adminToken = $r['body']['data']['access_token'];
+                return $this->adminToken;
+            }
+        }
+
+        $this->fail('Admin login failed with all known credentials');
     }
 
     private function getTenantToken(): string
@@ -95,13 +109,26 @@ class PaymentCallbackIntegrationTest extends WebTestCase
         if ($this->itemId) return $this->itemId;
 
         $admin = $this->getAdminToken();
-        $uid = 'PCI-' . substr(uniqid(), 0, 6);
+        $uid = 'PCI-' . bin2hex(random_bytes(6));
         $r = $this->api('POST', '/inventory', [
             'asset_code' => $uid, 'name' => 'Pay Test Item', 'asset_type' => 'studio',
             'location_name' => 'A', 'capacity_mode' => 'discrete_units',
             'total_capacity' => 5, 'timezone' => 'UTC',
         ], $admin);
-        $this->assertSame(201, $r['status'], 'Create inventory failed');
+        if ($r['status'] === 500) {
+            // EM may be closed after a prior 409/rollback. Reboot kernel and retry.
+            static::ensureKernelShutdown();
+            static::createClient();
+            $this->adminToken = null;
+            $admin = $this->getAdminToken();
+            $uid = 'PCI-' . bin2hex(random_bytes(6));
+            $r = $this->api('POST', '/inventory', [
+                'asset_code' => $uid, 'name' => 'Pay Test Item', 'asset_type' => 'studio',
+                'location_name' => 'A', 'capacity_mode' => 'discrete_units',
+                'total_capacity' => 5, 'timezone' => 'UTC',
+            ], $admin);
+        }
+        $this->assertSame(201, $r['status'], 'Create inventory failed: ' . json_encode($r['body']));
         $this->itemId = $r['body']['data']['id'];
 
         $this->api('POST', '/inventory/' . $this->itemId . '/pricing', [

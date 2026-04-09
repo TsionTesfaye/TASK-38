@@ -34,7 +34,7 @@ class AuditLog implements \JsonSerializable
     #[ORM\Column(name: 'object_type', type: 'string', length: 100)]
     private string $objectType;
 
-    #[ORM\Column(name: 'object_id', type: 'string', length: 36)]
+    #[ORM\Column(name: 'object_id', type: 'string', length: 255)]
     private string $objectId;
 
     #[ORM\Column(name: 'before_json', type: 'json', nullable: true)]

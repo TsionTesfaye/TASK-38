@@ -62,18 +62,28 @@ class UsernameUniquenessRealDbTest extends WebTestCase
             'default_currency'  => 'USD',
         ]);
 
-        $r = $this->api('POST', '/auth/login', [
-            'username'         => 'uniq_admin',
-            'password'         => 'secure_pass_123',
-            'device_label'     => 'test',
-            'client_device_id' => 'uniq-test-' . uniqid(),
-        ]);
+        // Try multiple credential sets (another test may have bootstrapped first).
+        $candidates = [
+            ['uniq_admin', 'secure_pass_123'],
+            ['admin', 'password123'],
+            ['http_test_admin', 'secure_pass_123'],
+            ['session_cap_admin', 'secure_pass_123'],
+            ['payadmin', 'password123'],
+        ];
 
-        if ($r['status'] !== 200) {
-            return null;
+        foreach ($candidates as [$u, $p]) {
+            $r = $this->api('POST', '/auth/login', [
+                'username'         => $u,
+                'password'         => $p,
+                'device_label'     => 'test',
+                'client_device_id' => 'uniq-test-' . uniqid(),
+            ]);
+            if ($r['status'] === 200) {
+                return $r['body']['data']['access_token'] ?? null;
+            }
         }
 
-        return $r['body']['data']['access_token'] ?? null;
+        return null;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -84,7 +94,7 @@ class UsernameUniquenessRealDbTest extends WebTestCase
     {
         static::createClient();
 
-        // Bootstrap to ensure user exists
+        // Bootstrap to ensure an admin user exists
         $this->api('POST', '/bootstrap', [
             'organization_name' => 'LoginTestOrg',
             'organization_code' => 'LTO',
@@ -93,13 +103,16 @@ class UsernameUniquenessRealDbTest extends WebTestCase
             'admin_display_name'=> 'Login Test',
         ]);
 
-        // Login with username + password ONLY — no org field
-        $r = $this->api('POST', '/auth/login', [
-            'username'         => 'login_test_user',
-            'password'         => 'test_pass_123',
-            'device_label'     => 'test',
-            'client_device_id' => 'login-test-' . uniqid(),
-        ]);
+        // Login with username + password ONLY — no org field.
+        // Try multiple candidates (another test may have bootstrapped first).
+        $r = null;
+        foreach ([['login_test_user','test_pass_123'],['admin','password123'],['uniq_admin','secure_pass_123']] as [$u,$p]) {
+            $r = $this->api('POST', '/auth/login', [
+                'username' => $u, 'password' => $p,
+                'device_label' => 'test', 'client_device_id' => 'login-test-' . uniqid(),
+            ]);
+            if ($r['status'] === 200) break;
+        }
 
         if ($r['status'] !== 200) {
             $this->markTestSkipped('Cannot login with expected credentials');

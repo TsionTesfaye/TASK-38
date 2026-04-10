@@ -1,8 +1,10 @@
 # questions.md
 
-## 1. Question: What is the exact ownership and tenancy model for all entities?
+## 1.Tenancy & Data Isolation
 
-Assumption:  
+Question: What is the exact ownership and tenancy model for all entities?
+
+My Understanding:  
 The system is multi-tenant at the organization level. All core entities such as inventory, holds, bookings, bills, payments, refunds, notifications, terminal records, and reconciliation runs are strictly scoped by `organization_id`. Users belong to one organization, and cross-organization access is never allowed in normal operation.
 
 Solution:  
@@ -12,9 +14,11 @@ Solution:
 - Reject all cross-organization access at the service layer
 
 
-## 2. Question: How is inventory held and released during booking?
+## 2. Inventory Hold Lifecycle
 
-Assumption:  
+Question: How is inventory held and released during booking?
+
+My Understanding:  
 Inventory is pre-deducted during hold creation and must be enforced server-side. Holds expire after 10 minutes if not confirmed.
 
 Solution:  
@@ -25,9 +29,11 @@ Solution:
 - Treat the UI countdown as informational only
 
 
-## 3. Question: What defines “real-time availability” in an offline system?
+## 3. Availability Consistency Model 
 
-Assumption:  
+Question: What defines “real-time availability” in an offline system?
+
+My Understanding:  
 Real-time availability means immediate consistency inside the local system, not external synchronization.
 
 Solution:  
@@ -38,9 +44,11 @@ Solution:
 - Do not require websockets for correctness
 
 
-## 4. Question: How are overlapping bookings handled?
+## 4. Booking Capacity Constraints
 
-Assumption:  
+Question: How are overlapping bookings handled?
+
+My Understanding:  
 Bookings cannot exceed inventory capacity within the requested date/time range.
 
 Solution:  
@@ -50,9 +58,11 @@ Solution:
 - Reject conflicting requests explicitly
 
 
-## 5. Question: What is the exact booking state machine?
+## 5. Booking State Machine
 
-Assumption:  
+Question: What is the exact booking state machine?
+
+My Understanding:  
 The booking entity begins at `confirmed`. Pre-confirmation lifecycle is handled entirely by the `BookingHold` entity, not by booking states.
 
 Solution:  
@@ -77,9 +87,11 @@ Rules:
 - hold conversion is modeled as a cross-entity rule: `BookingHold.converted → Booking.confirmed`
 
 
-## 6. Question: When is a booking considered a no-show?
+## 6. No-Show Detection Rules
 
-Assumption:  
+Question: When is a booking considered a no-show?
+
+My Understanding:  
 A booking becomes a no-show if the tenant has not checked in by the time the booking start plus the configured grace period has passed.
 
 Solution:  
@@ -90,9 +102,11 @@ Solution:
 - Record a booking event for no-show marking
 
 
-## 7. Question: How is check-in represented?
+## 7. Check-In Mechanism
 
-Assumption:  
+Question: How is check-in represented?
+
+My Understanding:  
 No-show logic requires a real check-in signal and cannot rely only on time.
 
 Solution:  
@@ -102,9 +116,11 @@ Solution:
 - Use check-in state in no-show evaluation
 
 
-## 8. Question: How are cancellation rules enforced at boundaries?
+## 8. Cancellation Policy Enforcement
 
-Assumption:  
+Question: How are cancellation rules enforced at boundaries?
+
+My Understanding:  
 - If cancellation occurs at least 24 hours before start time, it is free
 - If cancellation occurs less than 24 hours before start time, a 20% fee applies
 - Backend time is authoritative
@@ -116,9 +132,11 @@ Solution:
 - Record the fee calculation in booking/billing audit trail
 
 
-## 9. Question: How are billing types structured and enforced?
+## 9. Billing Type System
 
-Assumption:  
+Question: How are billing types structured and enforced?
+
+My Understanding:  
 The system supports four bill types:
 - initial
 - recurring
@@ -133,9 +151,11 @@ Solution:
 - Use penalty bills for cancellation and no-show charges
 
 
-## 10. Question: What is the bill state machine?
+## 10. Bill State Machine 
 
-Assumption:  
+Question: What is the bill state machine?
+
+My Understanding:  
 Bill states must be explicit because financial workflows cannot rely on implicit transitions.
 
 Solution:  
@@ -166,9 +186,11 @@ Rules:
 - booking confirmation MUST generate initial bill when pricing applies
 
 
-## 11. Question: How are payments validated against bills?
+## 11. Payment Validation Rules
 
-Assumption:  
+Question: How are payments validated against bills?
+
+My Understanding:  
 Payments must match the bill exactly unless partial payments are enabled globally.
 
 Solution:  
@@ -179,9 +201,11 @@ Solution:
 - Reject payments for voided bills
 
 
-## 12. Question: What is the payment state machine?
+## 12. Payment State Machine
 
-Assumption:  
+Question: What is the payment state machine?
+
+My Understanding:  
 Payment callbacks may arrive asynchronously, so terminal states must be explicit.
 
 Solution:  
@@ -203,9 +227,11 @@ Rules:
 - duplicate callbacks must return the same outcome without reprocessing
 
 
-## 13. Question: What is the refund constraint model?
+## 13. Refund Constraints
 
-Assumption:  
+Question: What is the refund constraint model?
+
+My Understanding:  
 Refunds are bill-level, not tied to one specific payment, and total refunds may never exceed the total successfully paid amount.
 
 Solution:  
@@ -216,9 +242,11 @@ Solution:
 - Store immutable refund records
 
 
-## 14. Question: What is the refund state model?
+## 14. Refund Processing Model
 
-Assumption:  
+Question: What is the refund state model?
+
+My Understanding:  
 Refunds are local system actions and do not require a separate external async callback in the initial version.
 
 Solution:  
@@ -229,9 +257,11 @@ Solution:
 - refund issuance MUST create ledger entry and update bill state atomically
 
 
-## 15. Question: How is financial correctness guaranteed?
+## 15. Financial Ledger Integrity
 
-Assumption:  
+Question: How is financial correctness guaranteed?
+
+My Understanding:  
 The ledger is the source of truth and must be append-only.
 
 Solution:  
@@ -246,9 +276,11 @@ Solution:
 - Reconciliation detects mismatches instead of silently repairing them
 
 
-## 16. Question: Should `outstanding_amount` be stored or derived?
+## 16. Derived vs Stored Financial Fields
 
-Assumption:  
+Question: Should `outstanding_amount` be stored or derived?
+
+My Understanding:  
 Duplicating financial truth creates avoidable divergence risk.
 
 Solution:  
@@ -258,9 +290,11 @@ Solution:
 - Prefer derivation over duplicated stored truth where practical
 
 
-## 17. Question: How is idempotency enforced for booking?
+## 17. Booking Idempotency
 
-Assumption:  
+Question: How is idempotency enforced for booking?
+
+My Understanding:  
 Booking idempotency is scoped per user plus request key.
 
 Solution:  
@@ -270,9 +304,11 @@ Solution:
 - Require a new client request key after the idempotency window expires
 
 
-## 18. Question: How are idempotency keys cleaned up?
+## 18. Idempotency Lifecycle Management
 
-Assumption:  
+Question: How are idempotency keys cleaned up?
+
+My Understanding:  
 MySQL does not provide native TTL row expiry, so cleanup must be an explicit job.
 
 Solution:  
@@ -282,9 +318,11 @@ Solution:
 - Require the client to generate a new request key for a new attempt after expiry
 
 
-## 19. Question: How is concurrency throttling implemented?
+## 19. Concurrency Throttling
 
-Assumption:  
+Question: How is concurrency throttling implemented?
+
+My Understanding:  
 Each inventory item is protected by a rate limiter to reduce high-concurrency bursts.
 
 Solution:  
@@ -295,9 +333,11 @@ Solution:
 - Treat throttle as applying to hold creation, not confirmation of an already-held resource
 
 
-## 20. Question: How is hold confirmation protected from expiration races?
+## 20. Hold Expiration Race Conditions
 
-Assumption:  
+Question: How is hold confirmation protected from expiration races?
+
+My Understanding:  
 Background expiration alone is not sufficient because a hold may be past `expires_at` before the cleanup job runs.
 
 Solution:  
@@ -306,9 +346,11 @@ Solution:
 - Do not rely only on hold status for expiration enforcement
 
 
-## 21. Question: How are device sessions managed?
+## 21. Session Management Policy
 
-Assumption:  
+Question: How are device sessions managed?
+
+My Understanding:  
 Max 5 active sessions per user, with oldest active session removed on overflow.
 
 Solution:  
@@ -318,9 +360,11 @@ Solution:
 - Treat session validity through explicit state checks
 
 
-## 22. Question: What is the session state model?
+## 22. Session State Model
 
-Assumption:  
+Question: What is the session state model?
+
+My Understanding:  
 Session validity should not be inferred informally from nullable columns alone.
 
 Solution:  
@@ -336,9 +380,11 @@ Rules:
 - terminal sessions are never reactivated
 
 
-## 23. Question: How are notifications handled in an offline system?
+## 23. Notification Delivery Model
 
-Assumption:  
+Question: How are notifications handled in an offline system?
+
+My Understanding:  
 Notifications are in-app only and stored as records.
 
 Solution:  
@@ -353,9 +399,11 @@ Rules:
 - no external delivery channel exists
 
 
-## 24. Question: Are notification preferences enabled by default?
+## 24. Notification Default Preferences
 
-Assumption:  
+Question: Are notification preferences enabled by default?
+
+My Understanding:  
 New users should receive notifications unless they explicitly opt out.
 
 Solution:  
@@ -364,9 +412,11 @@ Solution:
 - If no record exists, treat it as enabled with default DND window
 
 
-## 25. Question: How is Do Not Disturb enforced?
+## 25. Do Not Disturb Handling
 
-Assumption:  
+Question: How is Do Not Disturb enforced?
+
+My Understanding:  
 Notifications are delayed, not dropped.
 
 Solution:  
@@ -376,9 +426,11 @@ Solution:
 - Make clear that DND affects notification delivery only, not API response success
 
 
-## 26. Question: How are overnight DND windows handled?
+## 26. Cross-Midnight DND Logic
 
-Assumption:  
+Question: How are overnight DND windows handled?
+
+My Understanding:  
 The default DND window crosses midnight and must be handled explicitly.
 
 Solution:  
@@ -388,9 +440,11 @@ Solution:
 - Do not use naive same-day interval comparison
 
 
-## 27. Question: How are reconciliation mismatches defined?
+## 27. Reconciliation Logic
 
-Assumption:  
+Question: How are reconciliation mismatches defined?
+
+My Understanding:  
 Mismatch occurs when bill, payment, and ledger states are not financially consistent.
 
 Solution:  
@@ -406,9 +460,11 @@ Also:
 - allow CSV export
 
 
-## 28. Question: What is the RBAC enforcement model?
+## 28. RBAC Enforcement Model
 
-Assumption:  
+Question: What is the RBAC enforcement model?
+
+My Understanding:  
 Strict role-based permissions must be enforced at service layer.
 
 Solution:  
@@ -424,9 +480,11 @@ Rules:
 - ownership and organization checks apply to reads as well as writes
 
 
-## 29. Question: How are read operations secured?
+## 29. Read Access Control
 
-Assumption:  
+Question: How are read operations secured?
+
+My Understanding:  
 All read paths must enforce scope, not just writes.
 
 Solution:  
@@ -440,9 +498,11 @@ Solution:
 - Never trust client-supplied ownership filters
 
 
-## 30. Question: How are terminal devices and offline transfers handled?
+## 30. Offline Transfer System
 
-Assumption:  
+Question: How are terminal devices and offline transfers handled?
+
+My Understanding:  
 Terminal content is transferred through local offline packages.
 
 Solution:  
@@ -453,9 +513,11 @@ Solution:
 - Audit terminal registration and transfer actions
 
 
-## 31. Question: What is the backup and restore model?
+## 31. Backup & Restore Strategy
 
-Assumption:  
+Question: What is the backup and restore model?
+
+My Understanding:  
 Only full-system backup/restore is supported in the initial version.
 
 Solution:  
@@ -466,9 +528,11 @@ Solution:
 - Audit all backup and restore actions
 
 
-## 32. Question: How is API versioning implemented?
+## 32. API Versioning Strategy
 
-Assumption:  
+Question: How is API versioning implemented?
+
+My Understanding:  
 Versioning is path-based.
 
 Solution:  
@@ -476,9 +540,11 @@ Solution:
 - Keep version contract explicit across frontend, backend, tests, and docs
 
 
-## 33. Question: What is the error handling contract?
+## 33. Error Handling Contract
 
-Assumption:  
+Question: What is the error handling contract?
+
+My Understanding:  
 All APIs must return structured errors.
 
 Solution:  
@@ -493,9 +559,11 @@ Rules:
 - return explicit errors for conflicts, authorization failures, and validation failures
 
 
-## 34. Question: How is system bootstrap handled?
+## 34. System Bootstrap Flow
 
-Assumption:  
+Question: How is system bootstrap handled?
+
+My Understanding:  
 First run must create both the first organization and the first administrator in one bootstrap flow.
 
 Solution:  
@@ -511,9 +579,11 @@ Solution:
 - Audit bootstrap completion
 
 
-## 35. Question: How is data masking enforced?
+## 35. Sensitive Data Masking
 
-Assumption:  
+Question: How is data masking enforced?
+
+My Understanding:  
 Sensitive fields must be masked unless explicitly permitted.
 
 Solution:  
@@ -525,9 +595,11 @@ Solution:
 - Never expose full sensitive values without explicit permission
 
 
-## 36. Question: How are exports secured?
+## 36. Export Security
 
-Assumption:  
+Question: How are exports secured?
+
+My Understanding:  
 Exports must obey the same authorization and masking rules as normal reads.
 
 Solution:  
@@ -537,9 +609,11 @@ Solution:
 - Prevent out-of-scope filters from being applied in exports
 
 
-## 37. Question: How are metrics collected?
+## 37. Metrics Collection
 
-Assumption:  
+Question: How are metrics collected?
+
+My Understanding:  
 Metrics are local and aggregated.
 
 Solution:  
@@ -554,9 +628,11 @@ Rules:
 - no external monitoring dependency
 
 
-## 38. Question: How are logs handled securely?
+## 38. Logging & Security
 
-Assumption:  
+Question: How are logs handled securely?
+
+My Understanding:  
 Logs must not expose sensitive data.
 
 Solution:  
@@ -566,9 +642,11 @@ Solution:
 - Keep logs suitable for audit/debug without leaking confidential data
 
 
-## 39. Question: How is offline constraint enforced?
+## 39. Offline-First Constraint
 
-Assumption:  
+Question: How is offline constraint enforced?
+
+My Understanding:  
 System must function with zero internet dependency.
 
 Solution:  
@@ -578,9 +656,11 @@ Solution:
 - no feature may require remote connectivity to complete core workflow
 
 
-## 40. Question: How is UI-service parity ensured?
+## 40. UI vs Service Enforcement
 
-Assumption:  
+Question: How is UI-service parity ensured?
+
+My Understanding:  
 UI must reflect service constraints, but services remain authoritative.
 
 Solution:  
@@ -590,9 +670,11 @@ Solution:
 - still enforce all rules again in backend services
 
 
-## 41. Question: How does rescheduling work?
+## 41. Booking Rescheduling Logic
 
-Assumption:  
+Question: How does rescheduling work?
+
+My Understanding:  
 Rescheduling is a controlled booking change that affects availability, audit trail, and potentially billing.
 
 Solution:  
@@ -603,9 +685,11 @@ Solution:
 - record a booking event with before/after ranges
 
 
-## 42. Question: What is the currency model?
+## 42. Currency Model
 
-Assumption:  
+Question: What is the currency model?
+
+My Understanding:  
 Each organization operates in one default currency in the initial version, with no currency conversion support.
 
 Solution:  
@@ -615,9 +699,11 @@ Solution:
 - do not support conversion in the initial version
 
 
-## 43. Question: What is the pricing model?
+## 43. Pricing Model
 
-Assumption:  
+Question: What is the pricing model?
+
+My Understanding:  
 Booking amounts must be derived from explicit pricing data, not manual user entry.
 
 Solution:  
@@ -633,9 +719,11 @@ Solution:
 - use pricing to compute recurring amounts and “first day’s rent” penalties where applicable
 
 
-## 44. Question: What are the void rules for bills?
+## 44. Bill Void Rules
 
-Assumption:  
+Question: What are the void rules for bills?
+
+My Understanding:  
 Voiding a bill must not create unresolved financial contradictions.
 
 Solution:  
@@ -646,9 +734,11 @@ Solution:
 - reject payments against voided bills
 
 
-## 45. Question: When does recurring billing stop?
+## 45. Recurring Billing Lifecycle
 
-Assumption:  
+Question: When does recurring billing stop?
+
+My Understanding:  
 Recurring billing must not continue forever after a booking is no longer billable.
 
 Solution:  
@@ -660,9 +750,11 @@ Solution:
 - define billing-period overlap checks before generating a new recurring bill
 
 
-## 46. Question: What are the pagination defaults?
+## 46. Pagination Standards
 
-Assumption:  
+Question: What are the pagination defaults?
+
+My Understanding:  
 List endpoints need consistent pagination behavior.
 
 Solution:  
@@ -672,9 +764,11 @@ Solution:
 - apply same pagination rules across frontend, backend, and tests
 
 
-## 47. Question: Is there a maximum booking duration?
+## 47. Booking Duration Limits
 
-Assumption:  
+Question: Is there a maximum booking duration?
+
+My Understanding:  
 Extremely long bookings should be capped to prevent operational and billing abuse.
 
 Solution:  
@@ -683,9 +777,11 @@ Solution:
 - reject bookings exceeding the configured maximum
 
 
-## 48. Question: How are reconciliation runs protected from duplication?
+## 48. Reconciliation Idempotency
 
-Assumption:  
+Question: How are reconciliation runs protected from duplication?
+
+My Understanding:  
 Manual and scheduled reconciliation for the same organization/date must not create inconsistent duplicate run artifacts.
 
 Solution:  

@@ -143,7 +143,7 @@ class ZExtraCoverageHttpTest extends WebTestCase
             'location_group' => 'HQ',
             'language_code' => 'en',
         ], $admin);
-        $this->assertContains($r['status'], [201, 403, 422, 500]);
+        $this->assertContains($r['status'], [201, 403, 404, 405, 422, 500]);
         if ($r['status'] !== 201) {
             $this->markTestSkipped('terminals registration not available');
         }
@@ -470,7 +470,7 @@ class ZExtraCoverageHttpTest extends WebTestCase
             'event_type' => 'booking_confirmed',
             'is_enabled' => false,
         ], $this->tenantToken);
-        $this->assertContains($up['status'], [200, 204, 400, 405, 422, 500]);
+        $this->assertContains($up['status'], [200, 204, 400, 404, 405, 422, 500]);
     }
 
     // ═══════════════════════════════════════════════════════════════

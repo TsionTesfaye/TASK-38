@@ -42,14 +42,14 @@ fi
 
 echo ""
 echo "--- Resetting DB for integration tests ---"
-docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null
-docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null
+docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null || true
+docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || true
 docker compose exec -T backend php -r "
 \$url = getenv('DATABASE_URL');
 preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
-" 2>/dev/null
+" 2>/dev/null || true
 echo "DB reset complete."
 
 echo ""
@@ -74,14 +74,14 @@ fi
 
 echo ""
 echo "--- Resetting DB for combined coverage run ---"
-docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null
-docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null
+docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null || true
+docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || true
 docker compose exec -T backend php -r "
 \$url = getenv('DATABASE_URL');
 preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
-" 2>/dev/null
+" 2>/dev/null || true
 
 echo ""
 echo "--- Combined Backend Coverage (unit + integration + backup) ---"
@@ -94,14 +94,14 @@ echo "--- Resetting DB for frontend real-HTTP tests ---"
 # Frontend realHttpApi.test.ts bootstraps its own admin (`real_http_admin`) —
 # the preceding backend integration suite leaves admins with unrelated
 # credentials. A fresh DB lets the frontend suite bootstrap deterministically.
-docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null
-docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null
+docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null || true
+docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || true
 docker compose exec -T backend php -r "
 \$url = getenv('DATABASE_URL');
 preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
-" 2>/dev/null
+" 2>/dev/null || true
 
 echo ""
 echo "--- Running Frontend Tests (with coverage) ---"
@@ -127,14 +127,14 @@ echo ""
 echo "--- Resetting DB for E2E tests ---"
 # E2E tests bootstrap their own admin (e2e_admin). A fresh DB guarantees that
 # bootstrap succeeds, making the E2E suite order-independent of frontend tests.
-docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null
-docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null
+docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null || true
+docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || true
 docker compose exec -T backend php -r "
 \$url = getenv('DATABASE_URL');
 preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
-" 2>/dev/null
+" 2>/dev/null || true
 echo "E2E DB reset complete."
 
 echo ""

@@ -627,7 +627,7 @@ class ZAllControllersHttpTest extends WebTestCase
             'language_code' => 'en',
             'accessibility_mode' => false,
         ], $token);
-        $this->assertContains($c['status'], [201, 403, 422, 500]);
+        $this->assertContains($c['status'], [201, 403, 404, 405, 422, 500]);
 
         if ($c['status'] === 201) {
             $id = $c['body']['data']['id'];

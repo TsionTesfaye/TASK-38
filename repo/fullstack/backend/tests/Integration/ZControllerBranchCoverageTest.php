@@ -61,6 +61,11 @@ class ZControllerBranchCoverageTest extends WebTestCase
             ['http_test_admin', 'secure_pass_123'],
             ['session_cap_admin', 'secure_pass_123'],
             ['uniq_admin', 'secure_pass_123'],
+            ['payadmin', 'password123'],
+            ['real_http_admin', 'password123'],
+            ['all_ctrl_admin', 'password123'],
+            ['admin', 'password123'],
+            ['e2e_admin', 'e2e_password_123'],
         ] as [$u, $p]) {
             $client2 = static::getClient();
             $client2->request('POST', '/api/v1/auth/login', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([

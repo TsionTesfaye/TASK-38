@@ -68,6 +68,11 @@ class PaymentCallbackIntegrationTest extends WebTestCase
             ['username' => 'payadmin', 'password' => 'password123'],
             ['username' => 'admin', 'password' => 'password123'],
             ['username' => 'http_test_admin', 'password' => 'secure_pass_123'],
+            ['username' => 'all_ctrl_admin', 'password' => 'password123'],
+            ['username' => 'e2e_admin', 'password' => 'e2e_password_123'],
+            ['username' => 'session_cap_admin', 'password' => 'secure_pass_123'],
+            ['username' => 'uniq_admin', 'password' => 'secure_pass_123'],
+            ['username' => 'real_http_admin', 'password' => 'password123'],
         ];
 
         foreach ($candidates as $cred) {

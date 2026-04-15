@@ -39,7 +39,7 @@ vi.mock('../../api/inventory', () => ({
   deactivateItem: vi.fn(),
   listPricing: vi.fn(() => Promise.resolve([])),
   createPricing: vi.fn(),
-  getCalendar: vi.fn(() => Promise.resolve({ dates: [] })),
+  getCalendar: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('../../api/payments', () => ({

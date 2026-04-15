@@ -32,8 +32,8 @@ Role-based billing & booking platform for rentable assets. Supports multi-role a
 ## Running the Application
 
 ```bash
-docker-compose up --build -d
 cp .env.example .env
+docker-compose up --build -d
 ```
 
 On first startup the containers automatically run database migrations and start a background scheduler for hold expiry, recurring billing, no-show evaluation, notifications, and reconciliation.

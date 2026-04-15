@@ -61,6 +61,9 @@ class ZControllerExhaustiveBranchesTest extends WebTestCase
             ['uniq_admin', 'secure_pass_123'],
             ['payadmin', 'password123'],
             ['real_http_admin', 'password123'],
+            ['all_ctrl_admin', 'password123'],
+            ['admin', 'password123'],
+            ['e2e_admin', 'e2e_password_123'],
         ] as [$u, $p]) {
             $r = $this->api('POST', '/auth/login', [
                 'username' => $u, 'password' => $p,

@@ -64,9 +64,22 @@ class FullFlowHttpTest extends WebTestCase
         ]);
 
         // Try known credentials (may have been bootstrapped by another test class).
-        foreach (['admin', 'http_test_admin', 'session_cap_admin', 'uniq_admin', 'payadmin'] as $user) {
+        foreach ([
+            ['admin', 'password123'],
+            ['http_test_admin', 'secure_pass_123'],
+            ['session_cap_admin', 'secure_pass_123'],
+            ['uniq_admin', 'secure_pass_123'],
+            ['payadmin', 'password123'],
+            ['all_ctrl_admin', 'password123'],
+            ['real_http_admin', 'password123'],
+            ['e2e_admin', 'e2e_password_123'],
+            ['branch_admin', 'password123'],
+            ['exh_admin', 'password123'],
+            ['st_admin', 'password123'],
+            ['succ_admin', 'password123'],
+        ] as [$user, $pass]) {
             $r = $this->api('POST', '/auth/login', [
-                'username' => $user, 'password' => ($user === 'admin' || $user === 'payadmin') ? 'password123' : 'secure_pass_123',
+                'username' => $user, 'password' => $pass,
                 'device_label' => 'test', 'client_device_id' => 'test-' . uniqid(),
             ]);
             if ($r['status'] === 200) {

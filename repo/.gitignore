@@ -30,3 +30,9 @@ fullstack/backend/var/log/
 
 # Docker volumes
 mysql_data/
+
+# AI tool output / session artifacts / temporary audit files
+.claude/
+--cache-result/
+sessions/
+.tmp/

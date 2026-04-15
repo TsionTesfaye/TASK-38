@@ -392,7 +392,7 @@ final class Version20240101000000 extends AbstractMigration
             actor_username_snapshot VARCHAR(180) NOT NULL,
             action_code VARCHAR(100) NOT NULL,
             object_type VARCHAR(100) NOT NULL,
-            object_id VARCHAR(36) NOT NULL,
+            object_id VARCHAR(255) NOT NULL,
             before_json JSON DEFAULT NULL,
             after_json JSON DEFAULT NULL,
             client_device_id VARCHAR(255) DEFAULT NULL,

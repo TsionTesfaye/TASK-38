@@ -97,7 +97,10 @@ export async function listBackups(params?: {
   per_page?: number;
 }): Promise<Array<{ filename: string; size_bytes: number; modified_at: string }>> {
   const { data } = await client.get<
-    Array<{ filename: string; size_bytes: number; modified_at: string }>
+    | Array<{ filename: string; size_bytes: number; modified_at: string }>
+    | { data: Array<{ filename: string; size_bytes: number; modified_at: string }>; meta: unknown }
   >('/backups', { params });
-  return data;
+  // The backup endpoint returns a paginated envelope {data:[...], meta:{...}}
+  // which the axios interceptor does NOT unwrap (it only unwraps non-paginated).
+  return Array.isArray(data) ? data : (data as any).data ?? [];
 }

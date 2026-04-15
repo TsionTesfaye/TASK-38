@@ -10,6 +10,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
+    allowedHosts: ['frontend', 'localhost', '127.0.0.1'],
     proxy: {
       '/api': {
         target: 'http://backend:8080',
@@ -21,5 +23,11 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html'],
+      include: ['src/**'],
+      exclude: ['**/__tests__/**', '**/*.test.*', 'src/main.tsx', 'src/test/**', 'src/**/*.d.ts'],
+    },
   },
 });

@@ -76,7 +76,11 @@ client.interceptors.response.use(
     }
 
     try {
-      const { data: responseBody } = await axios.post('/api/v1/auth/refresh', {
+      // Use a bare axios.post (no interceptors, no auth header) so we don't
+      // recursively retry through this same interceptor. Construct the URL
+      // from the configured baseURL so tests and production both work.
+      const refreshUrl = `${client.defaults.baseURL ?? '/api/v1'}/auth/refresh`;
+      const { data: responseBody } = await axios.post(refreshUrl, {
         refresh_token: refreshToken,
       });
 

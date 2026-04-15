@@ -188,9 +188,17 @@ class SessionCapRealDbTest extends WebTestCase
         }
         $userId = $first['body']['data']['user']['id'];
 
+        // Revoke any stale sessions for this admin from prior tests.
+        $container = static::getContainer();
+        $conn = $container->get('doctrine.dbal.default_connection');
+        $conn->executeStatement(
+            'UPDATE device_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL',
+            [$userId],
+        );
+
         // Fill to exactly 5 sessions
-        $sessionIds = [$first['body']['data']['session_id']];
-        for ($i = 1; $i < 5; $i++) {
+        $sessionIds = [];
+        for ($i = 0; $i < 5; $i++) {
             $r = $this->login("device-fill-{$i}");
             $this->assertSame(200, $r['status']);
             $sessionIds[] = $r['body']['data']['session_id'];
@@ -224,8 +232,15 @@ class SessionCapRealDbTest extends WebTestCase
         }
         $userId = $first['body']['data']['user']['id'];
 
-        // Login 10 times total
-        for ($i = 1; $i < 10; $i++) {
+        // Revoke stale sessions from prior tests.
+        $conn = static::getContainer()->get('doctrine.dbal.default_connection');
+        $conn->executeStatement(
+            'UPDATE device_sessions SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL',
+            [$userId],
+        );
+
+        // Login 10 times total (creates 10 fresh sessions)
+        for ($i = 0; $i < 10; $i++) {
             $r = $this->login("device-dup-{$i}");
             $this->assertSame(200, $r['status']);
         }

@@ -104,11 +104,16 @@ class FullFlowHttpTest extends WebTestCase
 
         $admin = $this->getAdminToken();
 
-        // Try to find existing inventory item with capacity >= 2
+        // Try to find existing inventory item with capacity >= 2 AND pricing.
+        // Without the pricing check, we might reuse an item created by a
+        // co-running test that never set pricing → confirm hold would fail
+        // with "No active pricing found for inventory item".
         $r = $this->api('GET', '/inventory?page=1&per_page=50', null, $admin);
         if ($r['status'] === 200 && !empty($r['body']['data']['data'])) {
             foreach ($r['body']['data']['data'] as $item) {
-                if ($item['total_capacity'] >= 2) {
+                if ($item['total_capacity'] < 2) continue;
+                $p = $this->api('GET', '/inventory/' . $item['id'] . '/pricing', null, $admin);
+                if ($p['status'] === 200 && !empty($p['body']['data'])) {
                     $this->itemIdCache = $item['id'];
                     return $this->itemIdCache;
                 }
@@ -320,8 +325,22 @@ class FullFlowHttpTest extends WebTestCase
         $t = $this->getTenantToken();
         $this->assertNotEmpty($t, 'Setup prerequisite failed');
 
-        // Check current availability on the shared item to pick a free slot
-        $itemId = $this->getItemId(); // capacity=2
+        // Create a DEDICATED capacity=2 item for this test rather than
+        // reusing the shared one — co-running tests may have picked larger
+        // items, which would make 3 single-unit holds NOT exhaust capacity.
+        $admin = $this->getAdminToken();
+        $uid = 'CAP-' . substr(uniqid(), 0, 8);
+        $cr = $this->api('POST', '/inventory', [
+            'asset_code' => $uid, 'name' => 'Cap Test', 'asset_type' => 'studio',
+            'location_name' => 'A', 'capacity_mode' => 'discrete_units',
+            'total_capacity' => 2, 'timezone' => 'UTC',
+        ], $admin);
+        $this->assertSame(201, $cr['status'], 'create capacity item');
+        $itemId = $cr['body']['data']['id'];
+        $this->api('POST', '/inventory/' . $itemId . '/pricing', [
+            'rate_type' => 'daily', 'amount' => '100.00', 'currency' => 'USD',
+            'effective_from' => '2026-01-01T00:00:00Z',
+        ], $admin);
         $this->assertNotEmpty($itemId, 'Setup prerequisite failed');
 
         // Use microsecond-unique date range — append random offset to avoid DB collision

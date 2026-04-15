@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 #[AsEventListener(event: KernelEvents::EXCEPTION, priority: 0)]
@@ -56,6 +57,22 @@ class ExceptionListener
                 'message' => $this->redactSensitive($exception->getMessage()),
                 'details' => null,
             ], 422));
+            return;
+        }
+
+        // Symfony HTTP exceptions (NotFoundHttpException → 404, etc.)
+        if ($exception instanceof HttpExceptionInterface) {
+            $statusCode = $exception->getStatusCode();
+            $message = $exception->getMessage() ?: match ($statusCode) {
+                404 => 'Not found',
+                405 => 'Method not allowed',
+                default => 'HTTP error',
+            };
+            $event->setResponse(new JsonResponse([
+                'code'    => $statusCode,
+                'message' => $message,
+                'details' => null,
+            ], $statusCode));
             return;
         }
 

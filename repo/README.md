@@ -1,28 +1,44 @@
-# RentOps Billing & Booking Platform
+# RentOps
 
-Fully offline, role-based billing and booking platform for rentable assets.
+Role-based billing & booking platform for rentable assets. Supports multi-role auth (administrator, property_manager, tenant, finance_clerk), inventory + pricing, holds + bookings, bills + payments + refunds, notifications with DND, encrypted backups, terminals, audit logs, and reconciliation.
+
+## Architecture & Tech Stack
+
+* Frontend: React 18 + TypeScript + Vite + Zustand + React Router + TanStack Query
+* Backend: Symfony 6.4 (PHP 8.2) REST API + Doctrine ORM + JWT auth
+* Database: MySQL 8.0 (InnoDB, pessimistic locking)
+* Containerization: Docker & Docker Compose
+
+## Project Structure
+
+```text
+.
+├── fullstack/
+│   ├── backend/        # Symfony 6.4 API (PHP 8.2)
+│   ├── frontend/       # React 18 + Vite (Node 18 LTS)
+│   ├── storage/        # Runtime data (PDFs, backups, logs)
+│   └── API_SPEC.md     # Full REST API specification
+├── .env.example
+├── docker-compose.yml
+├── run_tests.sh
+└── README.md
+```
 
 ## Prerequisites
 
-- Docker & Docker Compose
-- (Optional for local frontend dev) Node.js 18 LTS
+* Docker
+* Docker Compose
 
-## Quick Start
+## Running the Application
 
 ```bash
-docker compose up
+docker-compose up --build -d
+cp .env.example .env
 ```
 
-That's it. On first startup, the containers automatically:
+On first startup the containers automatically run database migrations and start a background scheduler for hold expiry, recurring billing, no-show evaluation, notifications, and reconciliation.
 
-1. **mysql** — starts MySQL 8.0, creates the `rentops` database
-2. **backend** — installs PHP dependencies, waits for MySQL, runs migrations, starts API on port 8080
-3. **scheduler** — starts the background job runner (hold expiry, billing, notifications)
-4. **frontend** — installs Node dependencies, starts Vite dev server on port 3000
-
-### First-Run Bootstrap
-
-After `docker compose up`, the database is empty. Open `http://localhost:3000/bootstrap` or call:
+First-run bootstrap (one-time, creates the first organization + admin):
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/bootstrap \
@@ -31,82 +47,38 @@ curl -X POST http://localhost:8080/api/v1/bootstrap \
     "organization_name": "My Company",
     "organization_code": "MYCO",
     "admin_username": "admin",
-    "admin_password": "secure_password_123",
+    "admin_password": "password123",
     "admin_display_name": "System Admin"
   }'
 ```
 
-This creates the first organization and administrator. The endpoint is disabled after the first admin exists.
+## Access
 
-## Ports
+* Frontend: http://localhost:3000
+* Backend: http://localhost:8080
+* API docs: [fullstack/API_SPEC.md](fullstack/API_SPEC.md)
 
-| Service  | URL                        | Port |
-|----------|----------------------------|------|
-| Frontend | http://localhost:3000       | 3000 |
-| Backend  | http://localhost:8080       | 8080 |
-| MySQL    | mysql://localhost:3306      | 3306 |
-
-## API Specification
-
-See **[fullstack/API_SPEC.md](fullstack/API_SPEC.md)** for the complete REST API documentation covering all 65+ endpoints, request/response shapes, authentication, RBAC, error codes, and pagination.
-
-## Running Tests
+## Stop
 
 ```bash
-# All tests (backend unit + integration + frontend + build check)
+docker-compose down -v
+```
+
+## Testing
+
+```bash
+chmod +x run_tests.sh
 ./run_tests.sh
-
-# Or individually via Docker:
-docker compose exec backend php vendor/bin/phpunit --testsuite=unit
-docker compose exec backend php vendor/bin/phpunit --testsuite=integration
-docker compose exec frontend npx vitest run
 ```
 
-### Local frontend tests (no Docker needed)
+All tests run inside Docker — backend unit + integration (PHPUnit on real MySQL), frontend (Vitest + React Testing Library on Node 18), and a production build check. Exits 0 on full success, non-zero on any failure.
 
-```bash
-cd fullstack/frontend
-npm install
-npm test
-```
+## Seeded Credentials
 
-Requires Node.js 18 LTS. The frontend enforces `engines.node: >=18.0.0 <19.0.0`.
+No users are seeded by default — the system is empty until `/api/v1/bootstrap` is called (see "Running the Application" above). After bootstrap, the following test credentials are available:
 
-### Test Suites
-
-| Suite | Location | What it covers |
-|-------|----------|----------------|
-| **Backend Unit** | `fullstack/backend/tests/Unit/` | Service logic, RBAC, auth, tenant isolation, backups, scheduling |
-| **Backend Integration** | `fullstack/backend/tests/Integration/` | Full HTTP lifecycle, session cap, username uniqueness, backup/restore (real DB) |
-| **Frontend** | `fullstack/frontend/src/**/__tests__/` | API adapters, hold timer, booking UI, role-based routing |
-
-## Runtime Requirements
-
-| Component | Version |
-|-----------|---------|
-| Docker    | 20+     |
-| Node.js   | 18 LTS (18.20.x) — frontend container uses `node:18.20-alpine` |
-| PHP       | 8.2 — backend container uses `php:8.2-cli` |
-| MySQL     | 8.0 — `mysql:8.0` Docker image |
-
-## Environment Variables
-
-| Variable               | Default                                    | Description                       |
-|------------------------|--------------------------------------------|-----------------------------------|
-| APP_ENV                | dev                                        | Symfony environment               |
-| APP_SECRET             | change_me_in_production                    | Symfony app secret                |
-| DATABASE_URL           | mysql://rentops:rentops_secret@mysql:3306/rentops | MySQL connection string    |
-| JWT_SECRET             | local_jwt_secret_key_change_in_production  | JWT signing secret                |
-| JWT_ACCESS_TOKEN_TTL   | 900                                        | Access token lifetime (seconds)   |
-| JWT_REFRESH_TOKEN_TTL  | 1209600                                    | Refresh token lifetime (seconds)  |
-| PAYMENT_SHARED_SECRET  | local_payment_shared_secret                | Payment signature shared secret   |
-| BACKUP_ENCRYPTION_KEY  | local_backup_encryption_key_32ch           | AES-256-GCM backup encryption key |
-
-## Architecture
-
-- **Frontend**: React 18 + TypeScript + Vite (Zustand state, React Router, TanStack Query)
-- **Backend**: Symfony 6.4 REST API (Doctrine ORM, JWT auth, RBAC)
-- **Database**: MySQL 8.0 (InnoDB, foreign keys, pessimistic locking)
-- **Auth**: Stateless JWT — access tokens (15 min) + refresh tokens (14 days)
-- **Encryption**: AES-256-GCM for backup encryption
-- **Background Jobs**: Symfony console scheduler (hold expiry, recurring billing, no-show evaluation, notifications, reconciliation)
+| Role  | Username | Password      |
+| ----- | -------- | ------------- |
+| Admin | admin    | password123   |
+| User  | _created via `POST /users` by admin_ | _admin-set_ |
+| Guest | _public endpoints only_ (`/health`, `/bootstrap`, `/auth/login`, `/auth/refresh`, `/payments/callback`) | — |

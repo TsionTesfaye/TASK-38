@@ -16,7 +16,8 @@ fullstack/backend/var/
 .DS_Store
 Thumbs.db
 
-# Environment
+# Environment — never commit real secrets
+.env
 .env.local
 .env.*.local
 
@@ -31,8 +32,14 @@ fullstack/backend/var/log/
 # Docker volumes
 mysql_data/
 
+# Test output
+fullstack/e2e/test-results/
+fullstack/e2e/playwright-report/
+fullstack/frontend/coverage/
+fullstack/backend/var/coverage/
+
 # AI tool output / session artifacts / temporary audit files
 .claude/
 --cache-result/
 sessions/
-.tmp/
+

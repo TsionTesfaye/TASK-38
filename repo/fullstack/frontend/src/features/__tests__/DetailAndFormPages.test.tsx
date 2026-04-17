@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -87,46 +87,95 @@ beforeEach(() => {
   });
 });
 
-describe('Detail and form pages render', () => {
-  it('BillDetailPage renders for admin', async () => {
+describe('Detail and form pages — content and interaction assertions', () => {
+  it('BillDetailPage shows heading, bill fields, and admin action buttons', async () => {
     wrapAtPath('/bills/b-1', '/bills/:id', <BillDetailPage />);
     await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
+      expect(screen.getByText('Bill Details')).toBeInTheDocument();
+      // Status badge
+      expect(screen.getByText(/open/i)).toBeInTheDocument();
+      // Amounts from mock (100.00 original / outstanding)
+      expect(screen.getAllByText(/100\.00/).length).toBeGreaterThanOrEqual(1);
+      // Currency
+      expect(screen.getByText(/USD/)).toBeInTheDocument();
     });
   });
 
-  it('SupplementalBillPage renders', async () => {
+  it('BillDetailPage shows Download PDF button for admin', async () => {
+    wrapAtPath('/bills/b-1', '/bills/:id', <BillDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();
+    });
+  });
+
+  it('BillDetailPage shows Void Bill button for admin when bill is open', async () => {
+    wrapAtPath('/bills/b-1', '/bills/:id', <BillDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /void bill/i })).toBeInTheDocument();
+    });
+  });
+
+  it('SupplementalBillPage renders form fields', async () => {
     wrapAtPath('/finance/bills/new', '/finance/bills/new', <SupplementalBillPage />);
     await waitFor(() => {
       expect(document.body.innerHTML).not.toBe('');
+      // A form input should be present
+      expect(document.querySelector('input, textarea, select')).not.toBeNull();
     });
   });
 
-  it('InventoryDetailPage renders', async () => {
+  it('InventoryDetailPage shows item name as heading', async () => {
     wrapAtPath('/inventory/item-1', '/inventory/:id', <InventoryDetailPage />);
     await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
+      // Name from mock is 'Item'
+      expect(screen.getByText('Item')).toBeInTheDocument();
     });
   });
 
-  it('InventoryFormPage renders', async () => {
+  it('InventoryDetailPage shows item fields from mock data', async () => {
+    wrapAtPath('/inventory/item-1', '/inventory/:id', <InventoryDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText('A1')).toBeInTheDocument();     // asset_code
+      expect(screen.getByText(/UTC/)).toBeInTheDocument();    // timezone
+      expect(screen.getByText(/5/)).toBeInTheDocument();      // total_capacity
+    });
+  });
+
+  it('InventoryDetailPage shows Availability Calendar section', async () => {
+    wrapAtPath('/inventory/item-1', '/inventory/:id', <InventoryDetailPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/availability calendar/i)).toBeInTheDocument();
+    });
+  });
+
+  it('InventoryFormPage renders input fields for new item creation', async () => {
     wrapAtPath('/inventory/new', '/inventory/new', <InventoryFormPage />);
     await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
+      // Form should have text inputs
+      const inputs = document.querySelectorAll('input[type="text"], input:not([type])');
+      expect(inputs.length).toBeGreaterThan(0);
     });
   });
 
-  it('PaymentInitiatePage renders', async () => {
+  it('InventoryFormPage has a submit button', async () => {
+    wrapAtPath('/inventory/new', '/inventory/new', <InventoryFormPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create|save|submit/i })).toBeInTheDocument();
+    });
+  });
+
+  it('PaymentInitiatePage shows outstanding amount from bill', async () => {
     wrapAtPath('/bills/b-1/pay', '/bills/:id/pay', <PaymentInitiatePage />);
     await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
+      // Bill outstanding is 100.00
+      expect(screen.getByText(/100\.00/)).toBeInTheDocument();
     });
   });
 
-  it('RefundFormPage renders', async () => {
+  it('RefundFormPage renders a form with amount and reason inputs', async () => {
     wrapAtPath('/finance/refunds/new', '/finance/refunds/new', <RefundFormPage />);
     await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
+      expect(document.querySelector('input, textarea')).not.toBeNull();
     });
   });
 

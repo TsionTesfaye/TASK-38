@@ -52,5 +52,8 @@ php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migratio
 echo "Running startup reconciliation..."
 php bin/console app:startup-reconciliation 2>/dev/null || echo "Startup reconciliation skipped."
 
+echo "Seeding demo accounts..."
+php bin/console app:seed-demo || echo "Demo seeding skipped."
+
 echo "Starting PHP server on 0.0.0.0:8080..."
 exec "$@"

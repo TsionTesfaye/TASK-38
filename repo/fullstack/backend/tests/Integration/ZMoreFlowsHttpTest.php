@@ -240,25 +240,27 @@ class ZMoreFlowsHttpTest extends WebTestCase
         ];
         $sig = $this->signPayload($payload);
         $cb = $this->api('POST', '/payments/callback', $payload, null, ['X-Payment-Signature' => $sig]);
-        $this->assertContains($cb['status'], [200, 409]);
+        $this->assertSame(200, $cb['status']);
+        $this->assertSame('succeeded', $cb['body']['data']['status'] ?? $cb['body']['data']['payment_status'] ?? 'succeeded');
 
-        if ($cb['status'] === 200) {
-            // Now refund partial
-            $refund = $this->api('POST', '/refunds', [
-                'bill_id' => $bill['id'],
-                'amount' => '10.00',
-                'reason' => 'partial refund',
-            ], $admin);
-            $this->assertContains($refund['status'], [201, 403, 409, 422]);
+        // Refund partial — admin always has permission, bill is now paid
+        $refund = $this->api('POST', '/refunds', [
+            'bill_id' => $bill['id'],
+            'amount' => '10.00',
+            'reason' => 'partial refund',
+        ], $admin);
+        $this->assertSame(201, $refund['status']);
+        $this->assertSame('10.00', $refund['body']['data']['amount']);
 
-            // Ledger for the bill
-            $le = $this->api('GET', "/ledger/bill/{$bill['id']}", null, $admin);
-            $this->assertContains($le['status'], [200, 403]);
+        // Ledger for the bill — admin can always read
+        $le = $this->api('GET', "/ledger/bill/{$bill['id']}", null, $admin);
+        $this->assertSame(200, $le['status']);
+        $this->assertIsArray($le['body']['data']);
 
-            // Ledger for the booking
-            $le2 = $this->api('GET', "/ledger/booking/{$bookingId}", null, $admin);
-            $this->assertContains($le2['status'], [200, 403]);
-        }
+        // Ledger for the booking — admin can always read
+        $le2 = $this->api('GET', "/ledger/booking/{$bookingId}", null, $admin);
+        $this->assertSame(200, $le2['status']);
+        $this->assertIsArray($le2['body']['data']);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -271,11 +273,12 @@ class ZMoreFlowsHttpTest extends WebTestCase
         if (!$bookingId) $this->markTestSkipped();
 
         $r = $this->api('POST', "/bookings/{$bookingId}/cancel", null, $this->tenantToken);
-        $this->assertContains($r['status'], [200, 403, 409]);
+        $this->assertSame(200, $r['status']);
+        $this->assertSame('canceled', $r['body']['data']['status']);
 
-        // Can't cancel twice
+        // Can't cancel twice — 409 (invalid state transition from canceled)
         $r2 = $this->api('POST', "/bookings/{$bookingId}/cancel", null, $this->tenantToken);
-        $this->assertContains($r2['status'], [403, 409]);
+        $this->assertSame(409, $r2['status']);
     }
 
     // ═══════════════════════════════════════════════════════════════

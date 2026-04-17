@@ -141,7 +141,8 @@ class ZControllerBranchCoverageTest extends WebTestCase
     {
         $admin = $this->admin();
         $r = $this->api('POST', '/users', '{not valid json', $admin);
-        $this->assertContains($r['status'], [400, 422]);
+        $this->assertSame(422, $r['status']);
+        $this->assertSame(422, $r['body']['code']);
     }
 
     public function testMissingRequiredFieldsRejected(): void
@@ -149,7 +150,9 @@ class ZControllerBranchCoverageTest extends WebTestCase
         $admin = $this->admin();
         // Missing password + display_name
         $r = $this->api('POST', '/users', json_encode(['username' => 'x']), $admin);
-        $this->assertContains($r['status'], [400, 422]);
+        $this->assertSame(422, $r['status']);
+        $this->assertSame(422, $r['body']['code']);
+        $this->assertStringContainsString('password', $r['body']['message'] ?? '');
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -284,7 +287,8 @@ class ZControllerBranchCoverageTest extends WebTestCase
             'amount' => '1.00',
             'currency' => 'USD',
         ]), null);
-        $this->assertContains($r['status'], [400, 401, 422]);
+        $this->assertSame(401, $r['status']);
+        $this->assertSame(401, $r['body']['code']);
     }
 
     public function testPaymentCallbackWrongSignature(): void
@@ -295,6 +299,7 @@ class ZControllerBranchCoverageTest extends WebTestCase
             'amount' => '1.00',
             'currency' => 'USD',
         ]), null, ['X-Payment-Signature' => 'definitely-wrong']);
-        $this->assertContains($r['status'], [401, 422]);
+        $this->assertSame(401, $r['status']);
+        $this->assertSame(401, $r['body']['code']);
     }
 }

@@ -218,8 +218,9 @@ class ZControllerSuccessPathsTest extends WebTestCase
         // Now try to void — should trigger BillVoidException (unrefunded payment exists)
         $admin = $this->admin();
         $v = $this->api('POST', "/bills/{$bill['id']}/void", null, $admin);
-        // BillVoidException maps to 409
-        $this->assertContains($v['status'], [400, 409, 422]);
+        // BillVoidException always maps to 409
+        $this->assertSame(409, $v['status']);
+        $this->assertSame(409, $v['body']['code']);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -266,7 +267,8 @@ class ZControllerSuccessPathsTest extends WebTestCase
         ];
         $sig = $this->signPayload($payload);
         $r = $this->api('POST', '/payments/callback', $payload, null, ['X-Payment-Signature' => $sig]);
-        $this->assertContains($r['status'], [404, 422]);
+        $this->assertSame(404, $r['status']);
+        $this->assertSame(404, $r['body']['code']);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -291,13 +293,14 @@ class ZControllerSuccessPathsTest extends WebTestCase
         $this->assertSame(200, $g['status']);
         $this->assertSame($holdId, $g['body']['data']['id']);
 
-        // Release hold
+        // Release hold — always returns 200 with the hold payload
         $rel = $this->api('POST', "/holds/{$holdId}/release", null, $this->tenantToken);
-        $this->assertContains($rel['status'], [200, 204]);
+        $this->assertSame(200, $rel['status']);
+        $this->assertSame($holdId, $rel['body']['data']['id']);
 
-        // Released hold cannot be released again
+        // Released hold cannot be released again — 409 (invalid state transition)
         $rel2 = $this->api('POST', "/holds/{$holdId}/release", null, $this->tenantToken);
-        $this->assertContains($rel2['status'], [400, 409]);
+        $this->assertSame(409, $rel2['status']);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -357,6 +360,7 @@ class ZControllerSuccessPathsTest extends WebTestCase
         $token = $l['body']['data']['access_token'];
 
         $lo = $this->api('POST', '/auth/logout', ['session_id' => $sessionId], $token);
-        $this->assertContains($lo['status'], [200, 204]);
+        $this->assertSame(200, $lo['status']);
+        $this->assertSame('Logged out successfully', $lo['body']['data']['message']);
     }
 }

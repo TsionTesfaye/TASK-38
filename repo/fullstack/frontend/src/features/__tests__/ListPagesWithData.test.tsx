@@ -137,73 +137,92 @@ vi.mock('../../api/inventory', () => ({
 
 const wrap = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
-describe('List pages render with data', () => {
+describe('List pages render with data — field-level assertions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('PaymentListPage renders row with amount and status', async () => {
-    wrap(<PaymentListPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Payments')).toBeInTheDocument();
-      expect(screen.getByText('Succeeded')).toBeInTheDocument();
-    });
-  });
-
-  it('RefundListPage renders row', async () => {
-    wrap(<RefundListPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('50');
-    });
-  });
-
-  it('TerminalListPage renders row', async () => {
-    wrap(<TerminalListPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('Kiosk');
-    });
-  });
-
-  it('NotificationCenterPage renders notification', async () => {
-    wrap(<NotificationCenterPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('Booking Confirmed');
-    });
-  });
-
-  it('UserManagementPage renders users', async () => {
-    wrap(<UserManagementPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('admin');
-    });
-  });
-
-  it('AuditLogPage renders audit log row', async () => {
-    wrap(<AuditLogPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('auth.login');
-    });
-  });
-
-  it('BackupPage renders backup row', async () => {
-    wrap(<BackupPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).toContain('backup_org-1');
-    });
-  });
-
-  it('ReconciliationPage renders run row', async () => {
-    wrap(<ReconciliationPage />);
-    await waitFor(() => {
-      expect(document.body.innerHTML).not.toBe('');
-    });
-  });
-
-  it('InventoryListPage renders item row', async () => {
+  it('InventoryListPage renders item row with code, name, and capacity', async () => {
     wrap(<InventoryListPage />);
     await waitFor(() => {
       expect(screen.getByText('Inventory')).toBeInTheDocument();
       expect(screen.getByText('Item One')).toBeInTheDocument();
+      expect(screen.getByText('A1')).toBeInTheDocument();
+    });
+  });
+
+  it('PaymentListPage renders row with heading, status badge, and amount', async () => {
+    wrap(<PaymentListPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Payments')).toBeInTheDocument();
+      expect(screen.getByText('Succeeded')).toBeInTheDocument();
+      expect(screen.getByText(/100\.00/)).toBeInTheDocument();
+    });
+  });
+
+  it('RefundListPage renders row with amount and status', async () => {
+    wrap(<RefundListPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Refunds')).toBeInTheDocument();
+      expect(screen.getByText(/50\.00/)).toBeInTheDocument();
+      expect(screen.getByText(/issued/i)).toBeInTheDocument();
+    });
+  });
+
+  it('TerminalListPage renders row with terminal display name and code', async () => {
+    wrap(<TerminalListPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Terminals')).toBeInTheDocument();
+      expect(screen.getByText('Kiosk')).toBeInTheDocument();
+      expect(screen.getByText('T1')).toBeInTheDocument();
+    });
+  });
+
+  it('NotificationCenterPage renders notification title', async () => {
+    wrap(<NotificationCenterPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Booking Confirmed')).toBeInTheDocument();
+    });
+  });
+
+  it('UserManagementPage renders user row with username and role', async () => {
+    wrap(<UserManagementPage />);
+    await waitFor(() => {
+      expect(screen.getByText('User Management')).toBeInTheDocument();
+      expect(screen.getByText('admin')).toBeInTheDocument();
+      expect(screen.getByText(/administrator/i)).toBeInTheDocument();
+    });
+  });
+
+  it('UserManagementPage renders Freeze action button for active user', async () => {
+    wrap(<UserManagementPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /freeze/i })).toBeInTheDocument();
+    });
+  });
+
+  it('AuditLogPage renders row with action code and actor username', async () => {
+    wrap(<AuditLogPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/audit log/i)).toBeInTheDocument();
+      expect(screen.getByText('auth.login')).toBeInTheDocument();
+      expect(screen.getByText('admin')).toBeInTheDocument();
+    });
+  });
+
+  it('BackupPage renders backup row with filename', async () => {
+    wrap(<BackupPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Backups')).toBeInTheDocument();
+      expect(screen.getByText(/backup_org-1/)).toBeInTheDocument();
+    });
+  });
+
+  it('ReconciliationPage renders run row with completed status', async () => {
+    wrap(<ReconciliationPage />);
+    await waitFor(() => {
+      expect(screen.getByText(/reconciliation/i)).toBeInTheDocument();
+      expect(screen.getByText(/completed/i)).toBeInTheDocument();
     });
   });
 });

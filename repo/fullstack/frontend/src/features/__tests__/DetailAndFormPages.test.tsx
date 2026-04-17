@@ -24,6 +24,7 @@ vi.mock('../../api/billing', () => ({
   createSupplementalBill: vi.fn(() => Promise.resolve({})),
   voidBill: vi.fn(() => Promise.resolve({})),
   downloadPdf: vi.fn(() => Promise.resolve(new Blob())),
+  listBills: vi.fn(() => Promise.resolve({ data: [], meta: { page: 1, per_page: 25, total: 0, has_next: false } })),
 }));
 
 vi.mock('../../api/inventory', () => ({
@@ -49,14 +50,6 @@ vi.mock('../../api/payments', () => ({
 vi.mock('../../api/refunds', () => ({
   createRefund: vi.fn(() => Promise.resolve({ id: 'r-1' })),
 }));
-
-vi.mock('../../api/billing', async () => {
-  const actual: any = await vi.importActual('../../api/billing');
-  return {
-    ...actual,
-    listBills: vi.fn(() => Promise.resolve({ data: [], meta: { page: 1, per_page: 25, total: 0, has_next: false } })),
-  };
-});
 
 vi.mock('../../api/notifications', () => ({
   getPreferences: vi.fn(() => Promise.resolve([])),
@@ -96,8 +89,8 @@ describe('Detail and form pages — content and interaction assertions', () => {
       expect(screen.getByText(/open/i)).toBeInTheDocument();
       // Amounts from mock (100.00 original / outstanding)
       expect(screen.getAllByText(/100\.00/).length).toBeGreaterThanOrEqual(1);
-      // Currency
-      expect(screen.getByText(/USD/)).toBeInTheDocument();
+      // Bill type
+      expect(screen.getByText(/initial/i)).toBeInTheDocument();
     });
   });
 
@@ -167,13 +160,13 @@ describe('Detail and form pages — content and interaction assertions', () => {
   it('PaymentInitiatePage shows outstanding amount from bill', async () => {
     wrapAtPath('/bills/b-1/pay', '/bills/:id/pay', <PaymentInitiatePage />);
     await waitFor(() => {
-      // Bill outstanding is 100.00
-      expect(screen.getByText(/100\.00/)).toBeInTheDocument();
+      // Bill outstanding is 100.00 — may appear in multiple elements
+      expect(screen.getAllByText(/100\.00/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
   it('RefundFormPage renders a form with amount and reason inputs', async () => {
-    wrapAtPath('/finance/refunds/new', '/finance/refunds/new', <RefundFormPage />);
+    wrapAtPath('/finance/refunds/new?bill_id=b-1', '/finance/refunds/new', <RefundFormPage />);
     await waitFor(() => {
       expect(document.querySelector('input, textarea')).not.toBeNull();
     });

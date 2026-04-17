@@ -33,12 +33,11 @@ export const NotificationCenterPage: React.FC = () => {
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
-  if (notifications.length === 0) return <EmptyState message="No notifications" />;
 
   return (
     <div>
       <h1>Notifications</h1>
-      {notifications.map(n => (
+      {notifications.length === 0 ? <EmptyState message="No notifications" /> : notifications.map(n => (
         <div key={n.id} style={{ padding: '12px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #e0e0e0', backgroundColor: n.status === 'read' ? '#f9f9f9' : '#fff' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
             <strong>{n.title}</strong>

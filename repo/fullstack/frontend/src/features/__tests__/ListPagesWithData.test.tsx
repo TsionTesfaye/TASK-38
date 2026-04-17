@@ -221,8 +221,8 @@ describe('List pages render with data — field-level assertions', () => {
   it('ReconciliationPage renders run row with completed status', async () => {
     wrap(<ReconciliationPage />);
     await waitFor(() => {
-      expect(screen.getByText(/reconciliation/i)).toBeInTheDocument();
-      expect(screen.getByText(/completed/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /reconciliation/i })).toBeInTheDocument();
+      expect(screen.getAllByText(/completed/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 });

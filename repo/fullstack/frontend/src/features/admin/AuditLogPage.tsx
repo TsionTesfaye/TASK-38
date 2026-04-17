@@ -25,26 +25,29 @@ export const AuditLogPage: React.FC = () => {
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
-  if (logs.length === 0) return <EmptyState message="No audit logs" />;
 
   return (
     <div>
       <h1>Audit Logs</h1>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr>
-          {['Time', 'Actor', 'Action', 'Object', 'Object ID'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>)}
-        </tr></thead>
-        <tbody>
-          {logs.map(l => (
-            <tr key={l.id}><td style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '13px' }}>{formatDateTime(l.created_at)}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.actor_username_snapshot}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.action_code}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.object_type}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{maskId(l.object_id)}</td></tr>
-          ))}
-        </tbody>
-      </table>
-      <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+      {logs.length === 0 ? <EmptyState message="No audit logs" /> : (
+        <>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              {['Time', 'Actor', 'Action', 'Object', 'Object ID'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {logs.map(l => (
+                <tr key={l.id}><td style={{ padding: '8px', borderBottom: '1px solid #eee', fontSize: '13px' }}>{formatDateTime(l.created_at)}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.actor_username_snapshot}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.action_code}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{l.object_type}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{maskId(l.object_id)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+        </>
+      )}
     </div>
   );
 };

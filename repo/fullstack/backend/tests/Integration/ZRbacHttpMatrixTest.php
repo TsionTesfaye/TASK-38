@@ -159,9 +159,9 @@ class ZRbacHttpMatrixTest extends WebTestCase
                 ['administrator' => 200, 'property_manager' => 200, 'finance_clerk' => 200, 'tenant' => 403]],
             ['update_settings:MANAGE_SETTINGS admin-only', 'PUT', '/settings', ['timezone' => 'UTC'],
                 ['administrator' => 200, 'property_manager' => 403, 'finance_clerk' => 403, 'tenant' => 403]],
-            // Inventory uses ACTION_VIEW_OWN which is only on admin + tenant
+            // Inventory list uses ACTION_VIEW_OWN; property_manager also has this to enable browsing
             ['inventory_list:VIEW_OWN', 'GET', '/inventory', null,
-                ['administrator' => 200, 'property_manager' => 403, 'finance_clerk' => 403, 'tenant' => 200]],
+                ['administrator' => 200, 'property_manager' => 200, 'finance_clerk' => 403, 'tenant' => 200]],
             ['reconciliation_run:EXPORT_FINANCE admin+fc', 'POST', '/reconciliation/run', null,
                 ['administrator' => 201, 'property_manager' => 403, 'finance_clerk' => 201, 'tenant' => 403]],
             ['reconciliation_list:VIEW_FINANCE admin+fc', 'GET', '/reconciliation/runs', null,

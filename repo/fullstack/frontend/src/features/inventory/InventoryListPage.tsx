@@ -26,7 +26,6 @@ export const InventoryListPage: React.FC = () => {
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
-  if (items.length === 0) return <EmptyState message="No inventory items found" />;
 
   return (
     <div>
@@ -36,26 +35,30 @@ export const InventoryListPage: React.FC = () => {
           Create Item
         </button>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr>
-          {['Code', 'Name', 'Type', 'Location', 'Capacity', 'Active'].map(h => (
-            <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>
-          ))}
-        </tr></thead>
-        <tbody>
-          {items.map(item => (
-            <tr key={item.id} onClick={() => navigate(item.id)} style={{ cursor: 'pointer' }}>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.asset_code}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.name}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.asset_type}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.location_name}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.total_capacity}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.is_active ? 'Yes' : 'No'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+      {items.length === 0 ? <EmptyState message="No inventory items found" /> : (
+        <>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              {['Code', 'Name', 'Type', 'Location', 'Capacity', 'Active'].map(h => (
+                <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id} onClick={() => navigate(item.id)} style={{ cursor: 'pointer' }}>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.asset_code}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.name}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.asset_type}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.location_name}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.total_capacity}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{item.is_active ? 'Yes' : 'No'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+        </>
+      )}
     </div>
   );
 };

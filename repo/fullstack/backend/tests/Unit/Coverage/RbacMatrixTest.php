@@ -67,6 +67,7 @@ class RbacMatrixTest extends TestCase
         $allowByRole = [
             'administrator' => $all, // admin has everything
             'property_manager' => [
+                $a::ACTION_VIEW_OWN,
                 $a::ACTION_VIEW_ORG,
                 $a::ACTION_MANAGE_INVENTORY,
                 $a::ACTION_MANAGE_BOOKINGS,

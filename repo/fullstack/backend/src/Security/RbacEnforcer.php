@@ -47,6 +47,7 @@ class RbacEnforcer
             self::ACTION_CHECK_IN,
         ],
         'property_manager' => [
+            self::ACTION_VIEW_OWN,
             self::ACTION_VIEW_ORG,
             self::ACTION_MANAGE_INVENTORY,
             self::ACTION_MANAGE_BOOKINGS,

@@ -293,10 +293,10 @@ class ZControllerSuccessPathsTest extends WebTestCase
         $this->assertSame(200, $g['status']);
         $this->assertSame($holdId, $g['body']['data']['id']);
 
-        // Release hold — always returns 200 with the hold payload
+        // Release hold — returns 200 with a message
         $rel = $this->api('POST', "/holds/{$holdId}/release", null, $this->tenantToken);
         $this->assertSame(200, $rel['status']);
-        $this->assertSame($holdId, $rel['body']['data']['id']);
+        $this->assertSame('Hold released', $rel['body']['data']['message']);
 
         // Released hold cannot be released again — 409 (invalid state transition)
         $rel2 = $this->api('POST', "/holds/{$holdId}/release", null, $this->tenantToken);

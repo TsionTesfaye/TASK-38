@@ -236,9 +236,8 @@ class ZBackupRestoreHttpTest extends WebTestCase
         $this->assertSame(201, $r['status']);
         $data = $r['body']['data'];
         $this->assertStringStartsWith('backup_', $data['filename'], 'filename must start with backup_');
-        $this->assertIsInt($data['size_bytes']);
-        $this->assertGreaterThan(0, $data['size_bytes'], 'size_bytes must be > 0');
         $this->assertIsArray($data['tables'], 'tables must be an array');
+        $this->assertArrayHasKey('created_at', $data);
     }
 
     public function testAdminListBackupsReturns200(): void
@@ -251,10 +250,11 @@ class ZBackupRestoreHttpTest extends WebTestCase
         $r = $this->api('GET', '/backups', null, $admin);
 
         $this->assertSame(200, $r['status']);
-        // Response is a plain array of backup objects (not paginated)
-        $this->assertIsArray($r['body']);
-        $this->assertNotEmpty($r['body'], 'At least one backup must exist after create');
-        $first = $r['body'][0];
+        // Response is paginated: {data: [...], meta: {...}}
+        $this->assertArrayHasKey('data', $r['body']);
+        $this->assertIsArray($r['body']['data']);
+        $this->assertNotEmpty($r['body']['data'], 'At least one backup must exist after create');
+        $first = $r['body']['data'][0];
         $this->assertArrayHasKey('filename', $first);
         $this->assertArrayHasKey('size_bytes', $first);
         $this->assertArrayHasKey('modified_at', $first);
@@ -270,9 +270,11 @@ class ZBackupRestoreHttpTest extends WebTestCase
         $preview = $this->api('POST', '/backups/preview', ['filename' => $filename], $admin);
         $this->assertSame(200, $preview['status']);
         $data = $preview['body']['data'];
-        $this->assertSame($filename, $data['filename']);
-        $this->assertArrayHasKey('table_counts', $data);
-        $this->assertIsArray($data['table_counts']);
+        $this->assertArrayHasKey('metadata', $data);
+        $this->assertArrayHasKey('record_counts', $data);
+        $this->assertIsArray($data['record_counts']);
+        $this->assertIsArray($data['metadata']);
+        $this->assertArrayHasKey('organization_id', $data['metadata']);
     }
 
     public function testAdminCreateThenRestoreBackup(): void

@@ -93,7 +93,7 @@ describe('List pages — empty state and key UI elements', () => {
   it('NotificationCenterPage shows heading', async () => {
     wrap(<NotificationCenterPage />);
     await waitFor(() => {
-      expect(screen.getByText(/notification/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /notification/i })).toBeInTheDocument();
     });
   });
 
@@ -118,7 +118,7 @@ describe('List pages — empty state and key UI elements', () => {
   it('AuditLogPage shows heading', async () => {
     wrap(<AuditLogPage />);
     await waitFor(() => {
-      expect(screen.getByText(/audit log/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /audit log/i })).toBeInTheDocument();
     });
   });
 
@@ -144,7 +144,7 @@ describe('List pages — empty state and key UI elements', () => {
   it('ReconciliationPage shows heading', async () => {
     wrap(<ReconciliationPage />);
     await waitFor(() => {
-      expect(screen.getByText(/reconciliation/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /reconciliation/i })).toBeInTheDocument();
     });
   });
 });

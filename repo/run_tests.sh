@@ -50,6 +50,7 @@ preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
 " 2>/dev/null || true
+docker compose exec -T backend php bin/console app:seed-demo 2>/dev/null || true
 echo "DB reset complete."
 
 echo ""
@@ -82,6 +83,7 @@ preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
 " 2>/dev/null || true
+docker compose exec -T backend php bin/console app:seed-demo 2>/dev/null || true
 
 echo ""
 echo "--- Combined Backend Coverage (unit + integration + backup) ---"
@@ -102,6 +104,8 @@ preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
 " 2>/dev/null || true
+# NOTE: do NOT seed-demo here — seed-demo creates an admin that blocks
+# the frontend realHttpApi test from bootstrapping its own org.
 
 echo ""
 echo "--- Running Frontend Tests (with coverage) ---"
@@ -135,6 +139,7 @@ preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
 " 2>/dev/null || true
+docker compose exec -T backend php bin/console app:seed-demo 2>/dev/null || true
 echo "E2E DB reset complete."
 
 echo ""

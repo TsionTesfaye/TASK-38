@@ -50,6 +50,7 @@ preg_match('#mysql://([^:]+):([^@]+)@([^:]+):(\d+)/([^?]+)#', \$url, \$m);
 \$pdo = new PDO('mysql:host='.\$m[3].';port='.\$m[4].';dbname='.\$m[5], \$m[1], \$m[2]);
 \$pdo->exec('ALTER TABLE audit_logs MODIFY COLUMN object_id VARCHAR(255) NOT NULL');
 " 2>/dev/null
+docker compose exec -T backend php bin/console app:seed-demo 2>/dev/null || true
 echo "DB reset complete."
 
 echo ""
@@ -71,6 +72,11 @@ else
     echo "Backup integration tests: FAILED"
     FAIL=$((FAIL + 1))
 fi
+
+echo ""
+echo "--- Resetting DB for frontend real-HTTP tests (no seed — frontend bootstraps its own admin) ---"
+docker compose exec -T backend php bin/console doctrine:schema:drop --force --full-database 2>/dev/null || true
+docker compose exec -T backend php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || true
 
 echo ""
 echo "--- Running Frontend Tests (with coverage) ---"

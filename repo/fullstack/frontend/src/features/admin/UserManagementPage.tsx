@@ -33,7 +33,6 @@ export const UserManagementPage: React.FC = () => {
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
-  if (users.length === 0) return <EmptyState message="No users" />;
 
   const handleCreateUser = async () => {
     if (!newUser.username || !newUser.password || !newUser.display_name) { setError('All fields required'); return; }
@@ -73,25 +72,29 @@ export const UserManagementPage: React.FC = () => {
           </button>
         </div>
       )}
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr>
-          {['Username', 'Name', 'Role', 'Active', 'Frozen', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>)}
-        </tr></thead>
-        <tbody>
-          {users.map(u => (
-            <tr key={u.id}><td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.username}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.display_name}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.role}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.is_active ? 'Yes' : 'No'}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.is_frozen ? <StatusBadge status="frozen" /> : 'No'}</td>
-              <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                {u.is_frozen ? <button onClick={() => handleUnfreeze(u.id)} style={{ padding: '4px 8px', cursor: 'pointer' }}>Unfreeze</button>
-                  : <button onClick={() => handleFreeze(u.id)} style={{ padding: '4px 8px', cursor: 'pointer' }}>Freeze</button>}
-              </td></tr>
-          ))}
-        </tbody>
-      </table>
-      <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+      {users.length === 0 ? <EmptyState message="No users" /> : (
+        <>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              {['Username', 'Name', 'Role', 'Active', 'Frozen', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '8px', borderBottom: '2px solid #e0e0e0' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}><td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.username}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.display_name}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.role}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.is_active ? 'Yes' : 'No'}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{u.is_frozen ? <StatusBadge status="frozen" /> : 'No'}</td>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                    {u.is_frozen ? <button onClick={() => handleUnfreeze(u.id)} style={{ padding: '4px 8px', cursor: 'pointer' }}>Unfreeze</button>
+                      : <button onClick={() => handleFreeze(u.id)} style={{ padding: '4px 8px', cursor: 'pointer' }}>Freeze</button>}
+                  </td></tr>
+              ))}
+            </tbody>
+          </table>
+          <Pagination page={page} perPage={perPage} total={total} onPageChange={setPage} />
+        </>
+      )}
     </div>
   );
 };
